@@ -122,6 +122,7 @@ export class TerminalConfigProvider extends ConfigProvider {
                 'scroll-page-down': ['⌥-PageDown'],
                 'scroll-to-bottom': ['Shift-PageDown'],
                 'open-session-log': ['Alt-G'],
+                'toggle-session-log': ['F4'],
             },
         },
         [Platform.Windows]: {
@@ -176,7 +177,7 @@ export class TerminalConfigProvider extends ConfigProvider {
                 'scroll-page-down': ['Alt-PageDown'],
                 'scroll-to-bottom': ['Ctrl-PageDown'],
                 'open-session-log': ['Alt-G'],
-                'toggle-session-log': [],
+                'toggle-session-log': ['F4'],
             },
         },
         [Platform.Linux]: {
@@ -229,7 +230,7 @@ export class TerminalConfigProvider extends ConfigProvider {
                 'scroll-page-down': ['Alt-PageDown'],
                 'scroll-to-bottom': ['Ctrl-PageDown'],
                 'open-session-log': ['Alt-G'],
-                'toggle-session-log': [],
+                'toggle-session-log': ['F4'],
             },
         },
     }
