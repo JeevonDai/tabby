@@ -11,4 +11,13 @@ import { TelnetProfilesService } from '../profiles'
 })
 export class TelnetProfileSettingsComponent implements ProfileSettingsComponent<TelnetProfile, TelnetProfilesService> {
     profile: FullyDefined<TelnetProfile>
+
+    setRawMode (enabled: boolean): void {
+        this.profile.options.rawMode = enabled
+        if (enabled) {
+            this.profile.options.inputMode = null
+            this.profile.options.inputNewlines = null
+            this.profile.options.outputNewlines = null
+        }
+    }
 }

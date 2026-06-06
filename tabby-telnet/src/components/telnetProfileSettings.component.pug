@@ -17,7 +17,13 @@ ul.nav-tabs(ngbNav, #nav='ngbNav')
                     [(ngModel)]='profile.options.port',
                 )
 
-            stream-processing-settings([options]='profile.options')
+            .form-line
+                .header
+                    .title(translate) Raw mode
+                    .description(translate) Pass-through TCP connection for serial port redirects. Disables Telnet negotiation, local echo, and newline conversion.
+                toggle([(ngModel)]='profile.options.rawMode', (ngModelChange)='setRawMode($event)')
+
+            stream-processing-settings(*ngIf='!profile.options.rawMode', [options]='profile.options')
 
     li(ngbNavItem)
         a(ngbNavLink, translate) Login scripts
