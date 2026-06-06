@@ -68,6 +68,7 @@ export abstract class Frontend {
     detach (host: HTMLElement): void { } // eslint-disable-line
 
     abstract getSelection (): string
+    abstract getBufferText (): string
     abstract copySelection (): void
     abstract selectAll (): void
     abstract clearSelection (): void

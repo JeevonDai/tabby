@@ -145,6 +145,14 @@ export class TerminalHotkeyProvider extends HotkeyProvider {
             id: 'debug-paste-output',
             name: this.translate.instant('Paste session output (debug)'),
         },
+        {
+            id: 'toggle-session-log',
+            name: this.translate.instant('Toggle session log recording'),
+        },
+        {
+            id: 'open-session-log',
+            name: this.translate.instant('Reveal session log file in folder'),
+        },
     ]
 
     constructor (private translate: TranslateService) { super() }
