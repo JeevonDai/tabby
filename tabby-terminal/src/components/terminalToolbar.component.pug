@@ -12,6 +12,16 @@
 
     ng-content
 
+    button.btn.btn-sm.btn-link.me-2(
+        (click)='tab.toggleSessionLog()',
+        [class.text-success]='tab.isSessionLogActive',
+        [class.text-muted]='!tab.isSessionLogActive',
+        [title]='tab.sessionLogButtonTitle'
+    )
+        i.fas.me-1([ngClass]='tab.isSessionLogActive ? "fa-circle" : "fa-clock"')
+        span(*ngIf='tab.isSessionLogActive', translate) Recording
+        span(*ngIf='!tab.isSessionLogActive', translate) Session log
+
     button.btn.btn-sm.btn-link(
         *ngIf='tab.enableToolbar',
         (click)='tab.togglePinToolbar()',

@@ -115,11 +115,11 @@ export class TerminalHotkeyProvider extends HotkeyProvider {
         },
         {
             id: 'toggle-session-log',
-            name: this.translate.instant('Toggle session log recording'),
+            name: this.translate.instant('Toggle timestamped session log'),
         },
         {
             id: 'open-session-log',
-            name: this.translate.instant('Reveal session log file in folder'),
+            name: this.translate.instant('Open session log file in folder'),
         },
     ]
 

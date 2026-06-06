@@ -8,6 +8,15 @@ search-panel(
     (close)='showSearchPanel = false; frontend.cancelSearch()'
 )
 
+button.btn.btn-sm.btn-link.session-log-button(
+    *ngIf='frontendIsReady && !enableToolbar',
+    (click)='toggleSessionLog()',
+    [class.text-success]='isSessionLogActive',
+    [class.text-muted]='!isSessionLogActive',
+    [title]='sessionLogButtonTitle'
+)
+    i.fas([ngClass]='isSessionLogActive ? "fa-circle" : "fa-clock"')
+
 button.btn.btn-sm.btn-link.toolbar-pin-button(
     *ngIf='enableToolbar && !pinToolbar',
     (click)='togglePinToolbar()',

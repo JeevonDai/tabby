@@ -802,6 +802,12 @@ export class BaseTerminalTabComponent<P extends BaseTerminalProfile> extends Bas
         return !!this.sessionLog?.active
     }
 
+    get sessionLogButtonTitle (): string {
+        return this.isSessionLogActive
+            ? this.translate.instant('Recording session log')
+            : this.translate.instant('Start session log')
+    }
+
     getExportContent (): string {
         if (!this.frontend) {
             return ''

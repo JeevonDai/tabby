@@ -44,6 +44,19 @@
         }
     }
 
+    > .session-log-button {
+        position: absolute;
+        right: 68px;
+        top: 5px;
+        z-index: 4;
+        background: #00000047;
+        min-width: 28px;
+    }
+
+    > .session-log-button.text-success {
+        background: #00ff0026;
+    }
+
     > .toolbar-pin-button {
         position: absolute;
         right: 34px;
