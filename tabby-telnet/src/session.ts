@@ -15,6 +15,7 @@ export interface TelnetProfile extends ConnectableTerminalProfile {
 export interface TelnetProfileOptions extends StreamProcessingOptions, LoginScriptsOptions {
     host: string
     port: number | null
+    rawMode: boolean
     input: InputProcessingOptions,
 }
 
@@ -64,18 +65,35 @@ export class TelnetSession extends BaseSession {
     private serviceMessage = new Subject<string>()
     private socket: Socket
     private streamProcessor: TerminalStreamProcessor
+    private streamOptions: StreamProcessingOptions
     private telnetProtocol = false
     private lastWidth = 0
     private lastHeight = 0
     private requestedOptions = new Set<number>()
     private telnetRemoteEcho = false
+    private configuredOutputNewlines: StreamProcessingOptions['outputNewlines']
 
     constructor (
         injector: Injector,
         public profile: TelnetProfile,
     ) {
         super(injector.get(LogService).create(`telnet-${profile.options.host}-${profile.options.port}`))
-        this.streamProcessor = new TerminalStreamProcessor(profile.options)
+        this.configuredOutputNewlines = profile.options.outputNewlines
+        this.streamOptions = profile.options.rawMode
+            ? {
+                inputMode: null,
+                inputNewlines: null,
+                outputMode: profile.options.outputMode,
+                outputNewlines: null,
+            }
+            : {
+                inputMode: profile.options.inputMode,
+                inputNewlines: profile.options.inputNewlines,
+                outputMode: profile.options.outputMode,
+                // Start in raw newline mode until Telnet negotiation is detected.
+                outputNewlines: null,
+            }
+        this.streamProcessor = new TerminalStreamProcessor(this.streamOptions)
         this.middleware.push(this.streamProcessor)
         this.middleware.push(new InputProcessor(profile.options.input))
         this.setLoginScriptsOptions(profile.options)
@@ -117,15 +135,18 @@ export class TelnetSession extends BaseSession {
     }
 
     onData (data: Buffer): void {
-        if (!this.telnetProtocol && data[0] === TelnetCommands.IAC) {
-            this.telnetProtocol = true
-            this.middleware.push(new UnescapeFFMiddleware())
-            this.requestOption(TelnetCommands.DO, TelnetOptions.SUPPRESS_GO_AHEAD)
-            this.emitTelnet(TelnetCommands.WILL, TelnetOptions.TERMINAL_TYPE)
-            this.emitTelnet(TelnetCommands.WILL, TelnetOptions.NEGO_WINDOW_SIZE)
-        }
-        if (this.telnetProtocol) {
-            data = this.processTelnetProtocol(data)
+        if (!this.profile.options.rawMode) {
+            if (!this.telnetProtocol && data[0] === TelnetCommands.IAC) {
+                this.telnetProtocol = true
+                this.streamOptions.outputNewlines = this.configuredOutputNewlines
+                this.middleware.push(new UnescapeFFMiddleware())
+                this.requestOption(TelnetCommands.DO, TelnetOptions.SUPPRESS_GO_AHEAD)
+                this.emitTelnet(TelnetCommands.WILL, TelnetOptions.TERMINAL_TYPE)
+                this.emitTelnet(TelnetCommands.WILL, TelnetOptions.NEGO_WINDOW_SIZE)
+            }
+            if (this.telnetProtocol) {
+                data = this.processTelnetProtocol(data)
+            }
         }
         this.emitOutput(data)
     }

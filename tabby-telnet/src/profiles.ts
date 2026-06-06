@@ -14,6 +14,7 @@ export class TelnetProfilesService extends QuickConnectProfileProvider<TelnetPro
         options: {
             host: null,
             port: 23,
+            rawMode: false,
             inputMode: 'local-echo',
             outputMode: null,
             inputNewlines: null,
@@ -52,6 +53,11 @@ export class TelnetProfilesService extends QuickConnectProfileProvider<TelnetPro
                 options: {
                     host: '',
                     port: 1234,
+                    rawMode: true,
+                    inputMode: null,
+                    inputNewlines: null,
+                    outputMode: null,
+                    outputNewlines: null,
                 },
                 isBuiltin: true,
                 isTemplate: true,
