@@ -30,6 +30,7 @@ import { ZModemDecorator } from './features/zmodem'
 import { TerminalConfigProvider } from './config'
 import { TerminalHotkeyProvider } from './hotkeys'
 import { CopyPasteContextMenu, MiscContextMenu, LegacyContextMenu, ReconnectContextMenu, SaveAsProfileContextMenu } from './tabContextMenu'
+import { ExportTerminalContextMenu } from './terminalContextMenu'
 
 import { Frontend } from './frontends/frontend'
 import { XTermFrontend, XTermWebGLFrontend } from './frontends/xtermFrontend'
@@ -61,6 +62,8 @@ import { DefaultColorSchemes } from './colorSchemes'
         { provide: TabContextMenuItemProvider, useClass: LegacyContextMenu, multi: true },
         { provide: TabContextMenuItemProvider, useClass: ReconnectContextMenu, multi: true },
         { provide: TabContextMenuItemProvider, useClass: SaveAsProfileContextMenu, multi: true },
+
+        { provide: TerminalContextMenuItemProvider, useClass: ExportTerminalContextMenu, multi: true },
 
         { provide: CLIHandler, useClass: TerminalCLIHandler, multi: true },
         { provide: TerminalColorSchemeProvider, useClass: DefaultColorSchemes, multi: true },
@@ -106,3 +109,4 @@ export * from './session'
 export { LoginScriptsSettingsComponent, StreamProcessingSettingsComponent }
 export { MultifocusService } from './services/multifocus.service'
 export { TerminalColorScheme } from 'tabby-core' // was previously defined in this plugin
+export { TerminalSessionLog, formatTimestamp, sanitizeLogFilename, isLoggableLine, cleanLineForLog } from './terminalSessionLog'

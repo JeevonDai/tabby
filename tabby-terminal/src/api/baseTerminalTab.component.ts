@@ -1,3 +1,4 @@
+import * as path from 'path'
 import { Observable, Subject, first, auditTime, debounce, interval } from 'rxjs'
 import { Spinner } from 'cli-spinner'
 import colors from 'ansi-colors'
@@ -14,6 +15,7 @@ import { TerminalDecorator } from './decorator'
 import { SearchPanelComponent } from '../components/searchPanel.component'
 import { MultifocusService } from '../services/multifocus.service'
 import { getTerminalBackgroundColor } from '../helpers'
+import { TerminalSessionLog, sanitizeLogFilename } from '../terminalSessionLog'
 
 
 const INACTIVE_TAB_UNLOAD_DELAY = 1000 * 30
@@ -132,6 +134,8 @@ export class BaseTerminalTabComponent<P extends BaseTerminalProfile> extends Bas
     // Deps end
 
     protected logger: Logger
+    protected sessionLog: TerminalSessionLog | null = null
+    sessionLogFilePath: string | null = null
     protected output = new Subject<string>()
     protected binaryOutput = new Subject<Buffer>()
     protected sessionChanged = new Subject<BaseSession|null>()
@@ -326,6 +330,12 @@ export class BaseTerminalTabComponent<P extends BaseTerminalProfile> extends Bas
                 case 'scroll-to-bottom':
                     this.frontend?.scrollToBottom()
                     break
+                case 'toggle-session-log':
+                    this.toggleSessionLog()
+                    break
+                case 'open-session-log':
+                    this.openSessionLogFile()
+                    break
             }
         })
 
@@ -476,6 +486,10 @@ export class BaseTerminalTabComponent<P extends BaseTerminalProfile> extends Bas
             this.recentInputs += data
             this.recentInputs = this.recentInputs.substring(this.recentInputs.length - 32)
         })
+
+        if (this.frontend instanceof XTermFrontend) {
+            this.sessionLog = new TerminalSessionLog(this.frontend.xterm)
+        }
     }
 
     async buildContextMenu (): Promise<MenuItemOptions[]> {
@@ -528,6 +542,7 @@ export class BaseTerminalTabComponent<P extends BaseTerminalProfile> extends Bas
         }
 
         await this.frontend.write(data)
+        this.sessionLog?.scan()
     }
 
     async paste (): Promise<void> {
@@ -626,6 +641,7 @@ export class BaseTerminalTabComponent<P extends BaseTerminalProfile> extends Bas
     }
 
     async destroy (): Promise<void> {
+        this.stopSessionLog()
         this.frontend?.detach(this.content.nativeElement)
         this.frontend?.destroy()
         this.frontend = undefined
@@ -780,6 +796,69 @@ export class BaseTerminalTabComponent<P extends BaseTerminalProfile> extends Bas
             this.session = null
         }
         this.sessionChanged.next(session)
+    }
+
+    get isSessionLogActive (): boolean {
+        return !!this.sessionLog?.active
+    }
+
+    getExportContent (): string {
+        if (!this.frontend) {
+            return ''
+        }
+        return this.frontend.getBufferText()
+    }
+
+    toggleSessionLog (): void {
+        if (this.isSessionLogActive) {
+            this.stopSessionLog()
+        } else {
+            this.startSessionLog()
+        }
+    }
+
+    startSessionLog (): void {
+        if (!this.sessionLog) {
+            this.notifications.error(this.translate.instant('Session log is not available'))
+            return
+        }
+        const filePath = this.buildSessionLogFilePath()
+        const format = this.config.store.terminal.sessionLog?.timestampFormat ?? '[{HH}:{mm}:{ss}] '
+        this.sessionLog.start(filePath, format)
+        this.sessionLogFilePath = filePath
+        this.notifications.info(this.translate.instant('Session log started: {path}', { path: filePath }))
+    }
+
+    stopSessionLog (): void {
+        if (!this.sessionLog?.active) {
+            return
+        }
+        this.sessionLog.stop()
+        if (this.sessionLogFilePath) {
+            this.notifications.info(this.translate.instant('Session log stopped: {path}', { path: this.sessionLogFilePath }))
+        }
+    }
+
+    openSessionLogFile (): void {
+        if (!this.sessionLogFilePath) {
+            this.notifications.info(this.translate.instant('No session log file. Start session log first.'))
+            return
+        }
+        this.platform.showItemInFolder(this.sessionLogFilePath)
+    }
+
+    private buildSessionLogFilePath (): string {
+        const customDir = this.config.store.terminal.sessionLog?.directory?.trim()
+        let logDir = customDir
+        if (!logDir) {
+            const configPath = this.platform.getConfigPath()
+            logDir = configPath
+                ? path.join(path.dirname(configPath), 'session-logs')
+                : 'session-logs'
+        }
+        const stamp = new Date().toISOString().replace(/[:.]/g, '-')
+        const name = sanitizeLogFilename(this.customTitle || this.title || this.profile.name || 'terminal')
+        return path.join(logDir, `${name}-${stamp}.log`)
     }
 
     showToolbar (): void {

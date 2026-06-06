@@ -371,6 +371,18 @@ export class XTermFrontend extends Frontend {
         return this.xterm.getSelection()
     }
 
+    getBufferText (): string {
+        const buffer = this.xterm.buffer.active
+        const lines: string[] = []
+        for (let i = 0; i < buffer.length; i++) {
+            const line = buffer.getLine(i)
+            if (line) {
+                lines.push(line.translateToString(true))
+            }
+        }
+        return lines.join('\n')
+    }
+
     copySelection (): void {
         const text = this.getSelection()
         if (!text.trim().length) {

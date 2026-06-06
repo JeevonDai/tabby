@@ -113,6 +113,14 @@ export class TerminalHotkeyProvider extends HotkeyProvider {
             id: 'disconnect-tab',
             name: this.translate.instant('Disconnect current tab (Serial/Telnet/SSH)'),
         },
+        {
+            id: 'toggle-session-log',
+            name: this.translate.instant('Toggle session log recording'),
+        },
+        {
+            id: 'open-session-log',
+            name: this.translate.instant('Reveal session log file in folder'),
+        },
     ]
 
     constructor (private translate: TranslateService) { super() }

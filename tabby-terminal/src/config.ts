@@ -56,6 +56,10 @@ export class TerminalConfigProvider extends ConfigProvider {
             paletteHarmonious: false,
             replaceNewlinesWithSpacesOnPaste: false,
             trimWhitespaceOnPaste: true,
+            sessionLog: {
+                timestampFormat: '[{HH}:{mm}:{ss}] ',
+                directory: '',
+            },
         },
     }
 
@@ -109,6 +113,7 @@ export class TerminalConfigProvider extends ConfigProvider {
                 'scroll-down': ['Ctrl-Shift-Down'],
                 'scroll-page-down': ['⌥-PageDown'],
                 'scroll-to-bottom': ['Shift-PageDown'],
+                'open-session-log': ['Alt-G'],
             },
         },
         [Platform.Windows]: {
@@ -162,6 +167,8 @@ export class TerminalConfigProvider extends ConfigProvider {
                 'scroll-down': ['Ctrl-Shift-Down'],
                 'scroll-page-down': ['Alt-PageDown'],
                 'scroll-to-bottom': ['Ctrl-PageDown'],
+                'open-session-log': ['Alt-G'],
+                'toggle-session-log': [],
             },
         },
         [Platform.Linux]: {
@@ -213,6 +220,8 @@ export class TerminalConfigProvider extends ConfigProvider {
                 'scroll-down': ['Ctrl-Shift-Down'],
                 'scroll-page-down': ['Alt-PageDown'],
                 'scroll-to-bottom': ['Ctrl-PageDown'],
+                'open-session-log': ['Alt-G'],
+                'toggle-session-log': [],
             },
         },
     }
