@@ -3,7 +3,8 @@
     flex-wrap: nowrap;
 
     &:hover .add {
-      display: initial;
+        opacity: 1;
+        pointer-events: auto;
     }
 }
 
@@ -22,14 +23,17 @@
 
     .remove {
         flex: none;
+        cursor: pointer;
     }
 }
 
 .add {
     flex: auto;
-    display: none;
+    opacity: 0;
+    pointer-events: none;
 
     &:first-child {
-        display: block;
+        opacity: 1;
+        pointer-events: auto;
     }
 }
