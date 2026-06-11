@@ -21,6 +21,7 @@ export class HotkeySettingsTabComponent {
     hotkeyFilter = ''
     hotkeyDescriptions: HotkeyDescription[]
     allDuplicateHotkeys = this.getAllDuplicateHotkeys()
+    private hotkeysCache = new Map<string, Hotkey[]>()
 
     constructor (
         public config: ConfigService,
@@ -35,14 +36,11 @@ export class HotkeySettingsTabComponent {
     }
 
     getHotkeys (id: string): Hotkey[] {
-        let ptr: any = this.config.store.hotkeys
-        for (const token of id.split('.')) {
-            ptr = ptr?.[token]
-            if (ptr == null) {
-                return []
-            }
+        const cached = this.hotkeysCache.get(id)
+        if (cached) {
+            return cached
         }
-        return Array.isArray(ptr) ? ptr.map(hotkey => this.detectDuplicates(hotkey)) : []
+        return this.refreshHotkeysCache(id)
     }
 
     setHotkeys (id: string, hotkeys: Hotkey[]) {
@@ -62,6 +60,30 @@ export class HotkeySettingsTabComponent {
         )
         this.config.save()
         this.allDuplicateHotkeys = this.getAllDuplicateHotkeys()
+        this.hotkeysCache.clear()
+        this.refreshHotkeysCache(id, hotkeys)
+    }
+
+    private refreshHotkeysCache (id: string, hotkeys?: Hotkey[]): Hotkey[] {
+        const normalized = hotkeys
+            ? hotkeys.map(h => this.detectDuplicates(h.strokes))
+            : this.readHotkeysFromConfig(id).map(strokes => this.detectDuplicates(strokes))
+        this.hotkeysCache.set(id, normalized)
+        return normalized
+    }
+
+    private readHotkeysFromConfig (id: string): (string | string[])[] {
+        let ptr: unknown = this.config.store.hotkeys
+        for (const token of id.split(/\./g)) {
+            ptr = (ptr as Record<string, unknown>)?.[token]
+        }
+        if (typeof ptr === 'string') {
+            ptr = [ptr]
+        }
+        if (!Array.isArray(ptr)) {
+            ptr = []
+        }
+        return ptr as (string | string[])[]
     }
 
     copyId (id: string) {

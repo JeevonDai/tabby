@@ -4,6 +4,7 @@
 
     &:hover .add {
         opacity: 1;
+        pointer-events: auto;
     }
 }
 
@@ -22,6 +23,7 @@
 
     .remove {
         flex: none;
+        cursor: pointer;
     }
 }
 
@@ -29,8 +31,10 @@
     flex: auto;
     opacity: 0;
     white-space: nowrap;
+    pointer-events: none;
 
     &:first-child {
         opacity: 1;
+        pointer-events: auto;
     }
 }
