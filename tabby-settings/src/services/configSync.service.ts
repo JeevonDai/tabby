@@ -160,8 +160,12 @@ export class ConfigSyncService {
     }
 
     private async request (method: 'GET'|'POST'|'PATCH'|'DELETE', url: string, params = {}) {
-        if (this.config.store.configSync.host.endsWith('/')) {
-            this.config.store.configSync.host = this.config.store.configSync.host.slice(0, -1)
+        const hostValue = this.config.store.configSync.host
+        if (!hostValue) {
+            throw new Error('Config sync host is not configured')
+        }
+        if (hostValue.endsWith('/')) {
+            this.config.store.configSync.host = hostValue.slice(0, -1)
         }
         const host: string = this.config.store.configSync.host
         // Refuse to sync configuration over a plaintext channel. The remote
