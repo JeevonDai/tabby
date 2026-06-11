@@ -31,7 +31,6 @@ export class ConfigSyncSettingsTabComponent extends BaseComponent {
 
     async ngOnInit () {
         await this.testConnection()
-        this.loadConfigs()
     }
 
     async testConnection () {
@@ -51,6 +50,10 @@ export class ConfigSyncSettingsTabComponent extends BaseComponent {
     }
 
     async loadConfigs () {
+        if (!this.config.store.configSync.host || !this.config.store.configSync.token) {
+            this.configs = null
+            return
+        }
         this.configs = await this.configSync.getConfigs()
     }
 
