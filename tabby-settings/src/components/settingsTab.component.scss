@@ -62,6 +62,16 @@
     &.pad-window-controls > .content > .nav {
         padding-top: 40px;
     }
+
+    ::ng-deep .config-file-pane {
+        min-height: 0;
+        flex: 1 1 auto;
+
+        .tab-pane > &,
+        & {
+            height: 100%;
+        }
+    }
 }
 
 textarea {

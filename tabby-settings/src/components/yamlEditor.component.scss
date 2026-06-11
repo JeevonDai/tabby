@@ -1,0 +1,67 @@
+:host {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.yaml-editor-toolbar {
+    display: flex;
+    align-items: center;
+    flex: none;
+    margin-bottom: 0.5rem;
+}
+
+.yaml-editor-body {
+    flex: 1 1 auto;
+    min-height: 240px;
+    overflow: hidden;
+    border: 1px solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius);
+
+    ::ng-deep .cm-search {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.35rem 0.5rem;
+        padding: 0.4rem 0.5rem;
+        font-size: 12px;
+        line-height: 1.2;
+
+        label {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            margin: 0;
+            line-height: 1.2;
+            cursor: pointer;
+        }
+
+        input[type='checkbox'] {
+            margin: 0;
+            flex: none;
+            align-self: center;
+        }
+
+        .cm-button,
+        button[name='close'] {
+            background-color: var(--bs-secondary-bg, var(--theme-bg-more-2));
+            color: var(--bs-secondary-color, var(--bs-body-color));
+            border: 1px solid var(--bs-border-color);
+            border-radius: var(--bs-border-radius);
+            padding: 0.15rem 0.5rem;
+            font-size: 12px;
+            line-height: 1.2;
+            cursor: pointer;
+
+            &:hover {
+                background-color: var(--bs-tertiary-bg, var(--theme-bg-more));
+            }
+        }
+
+        button[name='close'] {
+            margin-left: auto;
+            padding-inline: 0.45rem;
+        }
+    }
+}

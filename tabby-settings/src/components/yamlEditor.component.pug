@@ -1,0 +1,9 @@
+.yaml-editor-toolbar
+    button.btn.btn-sm.btn-secondary(
+        type='button',
+        (click)='openSearch()',
+        [title]='"Search"|translate',
+    )
+        i.fas.fa-search.me-1
+        span(translate) Search
+.yaml-editor-body(#host)

@@ -143,18 +143,18 @@
                 i.fas.fa-fw.fa-code.me-2
                 span(translate) Config file
             ng-template.test(ngbNavContent)
-                .d-flex.flex-column.w-100.h-100
-                    .h-100.d-flex
-                        .w-100.d-flex.flex-column
+                .d-flex.flex-column.w-100.h-100.config-file-pane
+                    .flex-fill.d-flex.min-h-0
+                        .w-100.d-flex.flex-column.min-h-0([class.me-3]='showConfigDefaults')
                             h3(translate) Config file
-                            textarea.form-control.h-100(
-                                [(ngModel)]='configFile'
+                            yaml-editor.flex-fill(
+                                [(value)]='configFile',
                             )
-                        .w-100.d-flex.flex-column(*ngIf='showConfigDefaults')
+                        .w-100.d-flex.flex-column.min-h-0(*ngIf='showConfigDefaults')
                             h3(translate) Defaults
-                            textarea.form-control.h-100(
-                                [(ngModel)]='configDefaults',
-                                readonly
+                            yaml-editor.flex-fill(
+                                [value]='configDefaults',
+                                [readonly]='true',
                             )
                     .mt-3.d-flex
                         button.btn.btn-primary((click)='saveConfigFile()', *ngIf='isConfigFileValid()')
