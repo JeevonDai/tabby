@@ -37,6 +37,24 @@ ul.nav-tabs(ngbNav, #nav='ngbNav')
                         button(ngbDropdownItem, (click)='newProfile()')
                             i.fas.fa-fw.fa-plus
                             span(translate) New profile
+                        .dropdown-divider
+                        button(
+                            ngbDropdownItem,
+                            *ngFor='let provider of getConnectionProfileProviders()',
+                            (click)='newProfileFromType(provider.id)'
+                        )
+                            i(class='fas fa-fw fa-{{provider.id === "ssh" ? "desktop" : provider.id === "telnet" ? "network-wired" : "microchip"}}')
+                            span(*ngIf='provider.id === "ssh"', translate) New SSH connection
+                            span(*ngIf='provider.id === "telnet"', translate) New Telnet connection
+                            span(*ngIf='provider.id === "serial"', translate) New Serial connection
+                        ng-container(*ngIf='getTelnetTemplates().length > 1')
+                            button(
+                                ngbDropdownItem,
+                                *ngFor='let template of getTelnetTemplates()',
+                                (click)='newProfileFromType("telnet", template.id)'
+                            )
+                                i.fas.fa-fw.fa-network-wired
+                                span {{template.name}}
                         button(ngbDropdownItem, (click)='newProfileGroup()')
                             i.fas.fa-fw.fa-plus
                             span(translate) New profile Group

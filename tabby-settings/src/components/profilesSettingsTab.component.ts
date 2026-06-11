@@ -2,12 +2,18 @@ import { marker as _ } from '@biesbjerg/ngx-translate-extract-marker'
 import deepClone from 'clone-deep'
 import { Component, Inject } from '@angular/core'
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap'
-import { ConfigService, HostAppService, Profile, SelectorService, ProfilesService, PromptModalComponent, PlatformService, BaseComponent, PartialProfile, ProfileProvider, TranslateService, Platform, ProfileGroup, PartialProfileGroup, QuickConnectProfileProvider } from 'tabby-core'
+import { ConfigService, HostAppService, Profile, SelectorService, ProfilesService, PromptModalComponent, PlatformService, BaseComponent, PartialProfile, ProfileProvider, TranslateService, Platform, ProfileGroup, PartialProfileGroup, QuickConnectProfileProvider, NotificationsService } from 'tabby-core'
 import { EditProfileModalComponent } from './editProfileModal.component'
 import { EditProfileGroupModalComponent, EditProfileGroupModalComponentResult } from './editProfileGroupModal.component'
 
 _('Filter')
 _('Ungrouped')
+_('New SSH connection')
+_('New Telnet connection')
+_('New Serial connection')
+_('New raw socket connection')
+_('Cannot edit profile: connection plugin for "{type}" is not available')
+_('No template found for {type}')
 
 interface CollapsableProfileGroup extends ProfileGroup {
     collapsed: boolean
@@ -37,6 +43,7 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
         private ngbModal: NgbModal,
         private platform: PlatformService,
         private translate: TranslateService,
+        private notifications: NotificationsService,
     ) {
         super()
         this.profileProviders.sort((a, b) => a.name.localeCompare(b.name))
@@ -47,6 +54,13 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
         await this.refreshProfiles()
         this.subscribeUntilDestroyed(this.config.changed$, () => this.refreshProfileGroups())
         this.subscribeUntilDestroyed(this.config.changed$, () => this.refreshProfiles())
+        this.subscribeUntilDestroyed(this.profilesService.pendingProfileCreation$, type => {
+            void this.newProfileFromType(type)
+        })
+        const pending = this.profilesService.consumePendingNewProfileRequest()
+        if (pending) {
+            await this.newProfileFromType(pending.type, pending.templateId)
+        }
     }
 
     async refreshProfiles (): Promise<void> {
@@ -65,6 +79,29 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
 
     launchProfile (profile: PartialProfile<Profile>): void {
         this.profilesService.openNewTabForProfile(profile)
+    }
+
+    async newProfileFromType (type: string, templateId?: string): Promise<void> {
+        const profiles = await this.profilesService.getProfiles()
+        let base = templateId
+            ? profiles.find(x => x.id === templateId)
+            : profiles.find(x => x.type === type && x.isTemplate)
+        if (!base) {
+            base = profiles.find(x => x.type === type && x.isBuiltin)
+        }
+        if (!base) {
+            this.notifications.error(this.translate.instant('No template found for {type}', { type }))
+            return
+        }
+        await this.newProfile(base)
+    }
+
+    getConnectionProfileProviders (): ProfileProvider<Profile>[] {
+        return this.profileProviders.filter(x => ['ssh', 'telnet', 'serial'].includes(x.id))
+    }
+
+    getTelnetTemplates (): PartialProfile<Profile>[] {
+        return this.templateProfiles.filter(x => x.type === 'telnet')
     }
 
     async newProfile (base?: PartialProfile<Profile>): Promise<void> {
@@ -123,7 +160,8 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
         )
         const provider = this.profilesService.providerForProfile(profile)
         if (!provider) {
-            throw new Error('Cannot edit a profile without a provider')
+            this.notifications.error(this.translate.instant('Cannot edit profile: connection plugin for "{type}" is not available', { type: profile.type }))
+            return null
         }
         modal.componentInstance.partialProfile = deepClone(profile)
         modal.componentInstance.profileProvider = provider
