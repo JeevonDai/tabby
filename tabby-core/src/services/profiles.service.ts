@@ -1,4 +1,5 @@
 import { Injectable, Inject } from '@angular/core'
+import { Subject } from 'rxjs'
 import { TranslateService } from '@ngx-translate/core'
 import { NewTabParameters } from './tabs.service'
 import { BaseTabComponent } from '../components/baseTab.component'
@@ -14,6 +15,10 @@ import slugify from 'slugify'
 
 @Injectable({ providedIn: 'root' })
 export class ProfilesService {
+    readonly pendingProfileCreation$ = new Subject<string>()
+    private pendingNewProfileType: string | null = null
+    private pendingNewProfileTemplateId: string | null = null
+
     private profileDefaults = {
         id: '',
         type: '',
@@ -45,6 +50,23 @@ export class ProfilesService {
 
     getProviders (): ProfileProvider<Profile>[] {
         return [...this.profileProviders]
+    }
+
+    requestNewProfile (type: string, templateId?: string): void {
+        this.pendingNewProfileType = type
+        this.pendingNewProfileTemplateId = templateId ?? null
+        this.pendingProfileCreation$.next(type)
+    }
+
+    consumePendingNewProfileRequest (): { type: string, templateId?: string } | null {
+        const type = this.pendingNewProfileType
+        const templateId = this.pendingNewProfileTemplateId ?? undefined
+        this.pendingNewProfileType = null
+        this.pendingNewProfileTemplateId = null
+        if (!type) {
+            return null
+        }
+        return { type, templateId }
     }
 
     providerForProfile <T extends Profile> (profile: PartialProfile<T>): ProfileProvider<T>|null {

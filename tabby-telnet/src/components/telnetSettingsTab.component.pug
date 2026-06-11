@@ -1,0 +1,11 @@
+h3 Telnet
+
+.alert.alert-info(translate) Telnet connection management is done through the "Profiles & connections" tab
+
+button.btn.btn-primary.me-2((click)='newConnection()')
+    i.fas.fa-plus.me-2
+    span(translate) New Telnet connection
+
+button.btn.btn-secondary((click)='newRawSocketConnection()')
+    i.fas.fa-plug.me-2
+    span(translate) New raw socket connection

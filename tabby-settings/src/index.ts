@@ -14,7 +14,7 @@ import { MultiHotkeyInputComponent } from './components/multiHotkeyInput.compone
 import { SettingsTabComponent } from './components/settingsTab.component'
 import { SettingsTabBodyComponent } from './components/settingsTabBody.component'
 import { WindowSettingsTabComponent } from './components/windowSettingsTab.component'
-import { VaultSettingsTabComponent }  from './components/vaultSettingsTab.component'
+import { VaultSettingsTabComponent } from './components/vaultSettingsTab.component'
 import { SetVaultPassphraseModalComponent } from './components/setVaultPassphraseModal.component'
 import { ProfilesSettingsTabComponent } from './components/profilesSettingsTab.component'
 import { ReleaseNotesComponent } from './components/releaseNotesTab.component'
@@ -68,7 +68,7 @@ import { HotkeySettingsTabProvider, WindowSettingsTabProvider, VaultSettingsTabP
     ],
 })
 export default class SettingsModule {
-    constructor (
+    constructor(
         public configSync: ConfigSyncService,
         app: AppService,
         hotkeys: HotkeysService,
