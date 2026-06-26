@@ -5,13 +5,11 @@ import { NgbModule } from '@ng-bootstrap/ng-bootstrap'
 import { ToastrModule } from 'ngx-toastr'
 import { NgxFilesizeModule } from 'ngx-filesize'
 import TabbyCoreModule, { ConfigProvider, TabRecoveryProvider, HotkeyProvider, TabContextMenuItemProvider, ProfileProvider } from 'tabby-core'
-import { SettingsTabProvider } from 'tabby-settings'
 import TabbyTerminalModule from 'tabby-terminal'
 
 import { SSHProfileSettingsComponent } from './components/sshProfileSettings.component'
 import { SSHPortForwardingModalComponent } from './components/sshPortForwardingModal.component'
 import { SSHPortForwardingConfigComponent } from './components/sshPortForwardingConfig.component'
-import { SSHSettingsTabComponent } from './components/sshSettingsTab.component'
 import { SSHTabComponent } from './components/sshTab.component'
 import { SFTPPanelComponent } from './components/sftpPanel.component'
 import { SFTPDeleteModalComponent } from './components/sftpDeleteModal.component'
@@ -19,7 +17,6 @@ import { KeyboardInteractiveAuthComponent } from './components/keyboardInteracti
 import { HostKeyPromptModalComponent } from './components/hostKeyPromptModal.component'
 
 import { SSHConfigProvider } from './config'
-import { SSHSettingsTabProvider } from './settings'
 import { RecoveryProvider } from './recoveryProvider'
 import { SSHHotkeyProvider } from './hotkeys'
 import { SFTPContextMenu } from './tabContextMenu'
@@ -41,7 +38,6 @@ import { SFTPCreateDirectoryModalComponent } from './components/sftpCreateDirect
     ],
     providers: [
         { provide: ConfigProvider, useClass: SSHConfigProvider, multi: true },
-        { provide: SettingsTabProvider, useClass: SSHSettingsTabProvider, multi: true },
         { provide: TabRecoveryProvider, useClass: RecoveryProvider, multi: true },
         { provide: HotkeyProvider, useClass: SSHHotkeyProvider, multi: true },
         { provide: TabContextMenuItemProvider, useClass: SFTPContextMenu, multi: true },
@@ -54,7 +50,6 @@ import { SFTPCreateDirectoryModalComponent } from './components/sftpCreateDirect
         SFTPCreateDirectoryModalComponent,
         SSHPortForwardingModalComponent,
         SSHPortForwardingConfigComponent,
-        SSHSettingsTabComponent,
         SSHTabComponent,
         SFTPPanelComponent,
         KeyboardInteractiveAuthComponent,

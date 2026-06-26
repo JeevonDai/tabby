@@ -39,6 +39,9 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
     filter = ''
     telnetGroupFilter = 'all'
     Platform = Platform
+    defaultSSHX11Display = this.hostApp.platform === Platform.Linux
+        ? '/tmp/.X11-unix/X0'
+        : 'localhost:0.0'
     private descriptionCache = new Map<string, string|null>()
 
     constructor (
@@ -54,6 +57,10 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
     ) {
         super()
         this.profileProviders.sort((a, b) => a.name.localeCompare(b.name))
+    }
+
+    get hasSSHProvider (): boolean {
+        return this.profileProviders.some(p => p.id === 'ssh')
     }
 
     async ngOnInit (): Promise<void> {
