@@ -18,3 +18,34 @@ profile-icon {
 .collapse-item:hover {
     background-color: var(--theme-bg-less-2);
 }
+
+.telnet-group-filter {
+    max-width: 220px;
+}
+
+.telnet-profile-table {
+    table {
+        min-width: 760px;
+    }
+
+    th:first-child,
+    td.telnet-group-marker-cell {
+        width: 1.25rem;
+    }
+
+    .telnet-port-cell {
+        width: 7rem;
+    }
+
+    .telnet-group-marker {
+        width: 0.65rem;
+        height: 1.75rem;
+        border-radius: 4px;
+        opacity: 0.9;
+    }
+
+    .btn-link {
+        padding-left: 0.35rem;
+        padding-right: 0.35rem;
+    }
+}

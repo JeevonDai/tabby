@@ -1,6 +1,6 @@
 import { marker as _ } from '@biesbjerg/ngx-translate-extract-marker'
 import colors from 'ansi-colors'
-import { Component, Injector } from '@angular/core'
+import { Component, Injector, Input } from '@angular/core'
 import { Platform } from 'tabby-core'
 import { BaseTerminalTabComponent, ConnectableTerminalTabComponent } from 'tabby-terminal'
 import { TelnetProfile, TelnetSession } from '../session'
@@ -16,6 +16,7 @@ import { TelnetProfile, TelnetSession } from '../session'
 export class TelnetTabComponent extends ConnectableTerminalTabComponent<TelnetProfile> {
     Platform = Platform
     session: TelnetSession|null = null
+    @Input() profileGroupName?: string
 
     // eslint-disable-next-line @typescript-eslint/no-useless-constructor
     constructor (

@@ -2,7 +2,7 @@ import { marker as _ } from '@biesbjerg/ngx-translate-extract-marker'
 import deepClone from 'clone-deep'
 import { Component, Inject } from '@angular/core'
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap'
-import { ConfigService, HostAppService, Profile, SelectorService, ProfilesService, PlatformService, BaseComponent, PartialProfile, ProfileProvider, TranslateService, Platform, ProfileGroup, PartialProfileGroup, QuickConnectProfileProvider, NotificationsService } from 'tabby-core'
+import { ConfigService, HostAppService, Profile, SelectorService, ProfilesService, PromptModalComponent, PlatformService, BaseComponent, PartialProfile, ProfileProvider, TranslateService, Platform, ProfileGroup, PartialProfileGroup, QuickConnectProfileProvider, NotificationsService, MenuItemOptions } from 'tabby-core'
 import { EditProfileModalComponent } from './editProfileModal.component'
 import { EditProfileGroupModalComponent, EditProfileGroupModalComponentResult } from './editProfileGroupModal.component'
 
@@ -14,6 +14,9 @@ _('New Serial connection')
 _('New raw socket connection')
 _('Cannot edit profile: connection plugin for "{type}" is not available')
 _('No template found for {type}')
+_('All groups')
+_('Telnet connections')
+_('Detailed edit')
 
 interface CollapsableProfileGroup extends ProfileGroup {
     collapsed: boolean
@@ -34,6 +37,7 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
     rootGroups: PartialProfileGroup<CollapsableProfileGroup>[] = []
 
     filter = ''
+    telnetGroupFilter = 'all'
     Platform = Platform
     private descriptionCache = new Map<string, string|null>()
 
@@ -105,6 +109,149 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
 
     getTelnetTemplates (): PartialProfile<Profile>[] {
         return this.templateProfiles.filter(x => x.type === 'telnet')
+    }
+
+    getTelnetProfiles (): PartialProfile<Profile>[] {
+        const profiles = this.customProfiles.filter(x => x.type === 'telnet' && !x.isTemplate)
+        return profiles
+            .filter(profile => this.isTelnetProfileVisible(profile))
+            .sort((a, b) => this.getTelnetSortKey(a).localeCompare(this.getTelnetSortKey(b)))
+    }
+
+    getTelnetProfileGroups (): PartialProfileGroup<ProfileGroup>[] {
+        return this.profileGroups
+            .filter(group => group.editable || group.id === 'ungrouped')
+            .map(group => ({
+                id: group.id,
+                name: group.id === 'ungrouped' ? this.translate.instant('Ungrouped') : group.name,
+            }))
+    }
+
+    async newTelnetProfile (): Promise<void> {
+        const templates = this.getTelnetTemplates()
+        const template = templates.find(x => x.id === 'telnet:template') ?? templates[0]
+        const profile: PartialProfile<Profile> = template ? deepClone(template) : {
+            type: 'telnet',
+            name: '',
+            options: {
+                host: '',
+                port: 23,
+                inputMode: 'readline',
+                outputNewlines: 'crlf',
+            },
+        }
+        delete profile.id
+        profile.name = profile.name && !profile.isTemplate ? profile.name : this.translate.instant('New Telnet connection')
+        profile.group = this.telnetGroupFilter === 'all' || this.telnetGroupFilter === 'ungrouped' ? '' : this.telnetGroupFilter
+        profile.isBuiltin = false
+        profile.isTemplate = false
+        profile.icon ??= 'fas fa-network-wired'
+        profile.options ??= {}
+        profile.options.host ??= ''
+        profile.options.port ??= 23
+
+        await this.profilesService.newProfile(profile)
+        await this.config.save()
+    }
+
+    async duplicateTelnetProfile (profile: PartialProfile<Profile>): Promise<void> {
+        const copy: PartialProfile<Profile> = deepClone(profile)
+        delete copy.id
+        copy.name = this.translate.instant('{name} copy', profile)
+        copy.isBuiltin = false
+        copy.isTemplate = false
+        await this.profilesService.newProfile(copy)
+        await this.config.save()
+    }
+
+    async newTelnetProfileGroup (): Promise<void> {
+        const modal = this.ngbModal.open(PromptModalComponent)
+        modal.componentInstance.prompt = this.translate.instant('New group name')
+        const result = await modal.result.catch(() => null)
+        if (!result?.value.trim()) {
+            return
+        }
+
+        const group: PartialProfileGroup<ProfileGroup> = { id: '', name: result.value.trim() }
+        await this.profilesService.newProfileGroup(group)
+        await this.config.save()
+        this.telnetGroupFilter = group.id
+    }
+
+    async saveTelnetProfile (profile: PartialProfile<Profile>): Promise<void> {
+        profile.options ??= {}
+        if (!profile.name) {
+            const cfgProxy = this.profilesService.getConfigProxyForProfile(profile)
+            profile.name = this.profilesService.providerForProfile(profile)?.getSuggestedName(cfgProxy) ?? this.translate.instant('New Telnet connection')
+        }
+        if (profile.options.port !== null && profile.options.port !== undefined) {
+            profile.options.port = Number(profile.options.port)
+        }
+        await this.profilesService.writeProfile(profile)
+        await this.config.save()
+    }
+
+    async setTelnetProfileGroup (profile: PartialProfile<Profile>, group: string): Promise<void> {
+        profile.group = group === 'ungrouped' ? '' : group
+        await this.saveTelnetProfile(profile)
+    }
+
+    showTelnetProfileContextMenu (event: MouseEvent, profile: PartialProfile<Profile>): void {
+        event.preventDefault()
+        event.stopPropagation()
+
+        const menu: MenuItemOptions[] = [
+            {
+                label: this.translate.instant('Duplicate'),
+                click: () => {
+                    void this.duplicateTelnetProfile(profile)
+                },
+            },
+            {
+                label: this.translate.instant('Detailed edit'),
+                click: () => {
+                    void this.editProfile(profile)
+                },
+            },
+            { type: 'separator' },
+            {
+                label: this.translate.instant('Delete'),
+                click: () => {
+                    void this.deleteProfile(profile)
+                },
+            },
+        ]
+        this.platform.popupContextMenu(menu, event)
+    }
+
+    getTelnetGroupColor (groupId?: string): string|null {
+        if (!groupId) {
+            return null
+        }
+        const group = this.profileGroups.find(x => x.id === groupId)
+        if (!group || group.id === 'ungrouped') {
+            return null
+        }
+        return this.profilesService.getProfileGroupColor(group.id)
+    }
+
+    getTelnetProfileColor (profile: PartialProfile<Profile>): string|null {
+        return profile.color ?? this.getTelnetGroupColor(profile.group) ?? null
+    }
+
+    private isTelnetProfileVisible (profile: PartialProfile<Profile>): boolean {
+        if (this.telnetGroupFilter === 'ungrouped' && profile.group) {
+            return false
+        }
+        if (this.telnetGroupFilter !== 'all' && this.telnetGroupFilter !== 'ungrouped' && profile.group !== this.telnetGroupFilter) {
+            return false
+        }
+        return this.isProfileVisible(profile)
+    }
+
+    private getTelnetSortKey (profile: PartialProfile<Profile>): string {
+        const groupName = profile.group ? this.profilesService.resolveProfileGroupName(profile.group) : ''
+        return `${profile.group ? '1' : '0'}:${groupName}:${profile.name}`
     }
 
     async newProfile (base?: PartialProfile<Profile>): Promise<void> {

@@ -107,6 +107,94 @@ ul.nav-tabs(ngbNav, #nav='ngbNav')
                             ng-container(*ngTemplateOutlet='recursiveGroup; context: {$implicit: child}')
 
     li(ngbNavItem)
+        a(ngbNavLink, translate) Telnet connections
+        ng-template(ngbNavContent)
+            .d-flex.mb-3.align-items-center.gap-2
+                .input-group
+                    .input-group-text
+                        i.fas.fa-fw.fa-search
+                    input.form-control(type='search', [placeholder]='"Filter"|translate', [(ngModel)]='filter')
+
+                select.form-control.telnet-group-filter(
+                    [(ngModel)]='telnetGroupFilter'
+                )
+                    option(ngValue='all', translate) All groups
+                    option(ngValue='ungrouped', translate) Ungrouped
+                    option(
+                        *ngFor='let group of getTelnetProfileGroups()',
+                        [ngValue]='group.id',
+                        [hidden]='group.id === "ungrouped"'
+                    ) {{group.name}}
+
+                button.btn.btn-outline-secondary.flex-shrink-0((click)='newTelnetProfileGroup()')
+                    i.fas.fa-fw.fa-folder-plus
+                    span(translate) New profile Group
+
+                button.btn.btn-primary.flex-shrink-0((click)='newTelnetProfile()')
+                    i.fas.fa-fw.fa-plus
+                    span(translate) New Telnet connection
+
+            .table-responsive.telnet-profile-table
+                table.table.table-sm.table-hover.align-middle
+                    thead
+                        tr
+                            th
+                            th(translate) Name
+                            th(translate) Host
+                            th(translate) Port
+                            th(translate) Group
+                            th
+                    tbody
+                        tr(
+                            *ngFor='let profile of getTelnetProfiles()',
+                            (contextmenu)='showTelnetProfileContextMenu($event, profile)'
+                        )
+                            td.telnet-group-marker-cell
+                                .telnet-group-marker([style.background-color]='getTelnetProfileColor(profile)')
+                            td
+                                input.form-control.form-control-sm(
+                                    type='text',
+                                    [(ngModel)]='profile.name',
+                                    (blur)='saveTelnetProfile(profile)'
+                                )
+                            td
+                                input.form-control.form-control-sm(
+                                    type='text',
+                                    [(ngModel)]='profile.options.host',
+                                    (blur)='saveTelnetProfile(profile)'
+                                )
+                            td.telnet-port-cell
+                                input.form-control.form-control-sm(
+                                    type='number',
+                                    min='1',
+                                    max='65535',
+                                    [(ngModel)]='profile.options.port',
+                                    (blur)='saveTelnetProfile(profile)'
+                                )
+                            td
+                                select.form-control.form-control-sm(
+                                    [ngModel]='profile.group || "ungrouped"',
+                                    (ngModelChange)='setTelnetProfileGroup(profile, $event)'
+                                )
+                                    option(ngValue='ungrouped', translate) Ungrouped
+                                    option(
+                                        *ngFor='let group of getTelnetProfileGroups()',
+                                        [ngValue]='group.id',
+                                        [hidden]='group.id === "ungrouped"'
+                                    ) {{group.name}}
+                            td.text-end
+                                button.btn.btn-sm.btn-link((click)='launchProfile(profile)')
+                                    i.fas.fa-play
+                                button.btn.btn-sm.btn-link((click)='duplicateTelnetProfile(profile)')
+                                    i.fas.fa-copy
+                                button.btn.btn-sm.btn-link((click)='editProfile(profile)')
+                                    i.fas.fa-pencil-alt
+                                button.btn.btn-sm.btn-link.text-danger((click)='deleteProfile(profile)')
+                                    i.fas.fa-trash-alt
+                        tr(*ngIf='getTelnetProfiles().length === 0')
+                            td.text-muted.text-center(colspan='6', translate) No profiles found
+
+    li(ngbNavItem)
         a(ngbNavLink, translate) Advanced
         ng-template(ngbNavContent)
             .form-line.content-box(*ngIf='config.store.profiles.length > 0')

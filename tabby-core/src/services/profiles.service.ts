@@ -18,6 +18,17 @@ export class ProfilesService {
     readonly pendingProfileCreation$ = new Subject<string>()
     private pendingNewProfileType: string | null = null
     private pendingNewProfileTemplateId: string | null = null
+    private readonly groupColors = [
+        '#dc3545',
+        '#fd7e14',
+        '#ffc107',
+        '#198754',
+        '#20c997',
+        '#0dcaf0',
+        '#0d6efd',
+        '#6610f2',
+        '#d63384',
+    ]
 
     private profileDefaults = {
         id: '',
@@ -201,9 +212,14 @@ export class ProfilesService {
             }
             if (fullProfile.color) {
                 params.inputs['color'] = fullProfile.color
+            } else if (fullProfile.group) {
+                params.inputs['color'] = this.getProfileGroupColor(fullProfile.group)
             }
             if (fullProfile.icon) {
                 params.inputs['icon'] = fullProfile.icon
+            }
+            if (fullProfile.group) {
+                params.inputs['profileGroupName'] = this.resolveProfileGroupName(fullProfile.group)
             }
         }
         return params
@@ -584,6 +600,19 @@ export class ProfilesService {
     */
     resolveProfileGroup (groupId: string): PartialProfileGroup<ProfileGroup> | null {
         return this.config.store.groups.find(g => g.id === groupId) ?? null
+    }
+
+    getProfileGroupColor (groupId: string): string|null {
+        const group = this.config.store.groups.find(g => g.id === groupId)
+        if (!group) {
+            return null
+        }
+        let hash = 0
+        for (const char of group.id) {
+            hash = ((hash << 5) - hash) + char.charCodeAt(0)
+            hash |= 0
+        }
+        return this.groupColors[Math.abs(hash) % this.groupColors.length]
     }
 
     /**
