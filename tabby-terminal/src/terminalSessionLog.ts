@@ -36,7 +36,7 @@ export function cleanLineForLog (text: string): string {
 
 export class TerminalSessionLog {
     private filePath: string | null = null
-    private timestampFormat = '[{HH}:{mm}:{ss}] '
+    private timestampFormat = '[{YYYY}-{MM}-{DD} {HH}:{mm}:{ss}.{SSS}] '
     private recording = false
     private lastLoggedAbsoluteY = -1
     private writeParsedDisposable: IDisposable | null = null

@@ -819,7 +819,7 @@ export class BaseTerminalTabComponent<P extends BaseTerminalProfile> extends Bas
             return
         }
         const filePath = this.buildSessionLogFilePath()
-        const format = this.config.store.terminal.sessionLog?.timestampFormat ?? '[{HH}:{mm}:{ss}] '
+        const format = this.config.store.terminal.sessionLog?.timestampFormat ?? '[{YYYY}-{MM}-{DD} {HH}:{mm}:{ss}.{SSS}] '
         this.sessionLog.start(filePath, format)
         this.sessionLogFilePath = filePath
         this.notifications.info(this.translate.instant('Session log started: {path}', { path: filePath }))
