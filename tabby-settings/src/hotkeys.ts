@@ -10,6 +10,10 @@ export class SettingsHotkeyProvider extends HotkeyProvider {
             id: 'settings',
             name: this.translate.instant('Open Settings'),
         },
+        {
+            id: 'open-connections-settings',
+            name: this.translate.instant('Open Connections settings'),
+        },
     ]
 
     constructor (

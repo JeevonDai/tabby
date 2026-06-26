@@ -15,6 +15,7 @@ export class SettingsConfigProvider extends ConfigProvider {
             },
         },
         hotkeys: {
+            'open-connections-settings': [],
             'settings-tab': {
                 __nonStructural: true,
             },

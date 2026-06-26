@@ -23,6 +23,7 @@ import { ShowSecretModalComponent } from './components/showSecretModal.component
 import { YamlEditorComponent } from './components/yamlEditor.component'
 
 import { ConfigSyncService } from './services/configSync.service'
+import { SettingsNavigationService } from './services/settingsNavigation.service'
 
 import { SettingsTabProvider } from './api'
 import { ButtonProvider } from './buttonProvider'
@@ -40,6 +41,7 @@ import { HotkeySettingsTabProvider, WindowSettingsTabProvider, VaultSettingsTabP
         InfiniteScrollModule,
     ],
     providers: [
+        SettingsNavigationService,
         { provide: ToolbarButtonProvider, useClass: ButtonProvider, multi: true },
         { provide: ConfigProvider, useClass: SettingsConfigProvider, multi: true },
         { provide: HotkeyProvider, useClass: SettingsHotkeyProvider, multi: true },
@@ -72,9 +74,22 @@ export default class SettingsModule {
         public configSync: ConfigSyncService,
         app: AppService,
         hotkeys: HotkeysService,
+        settingsNavigation: SettingsNavigationService,
     ) {
         hotkeys.hotkey$.subscribe(async hotkey => {
-            if (hotkey.startsWith('settings-tab.')) {
+            if (hotkey === 'open-connections-settings') {
+                settingsNavigation.requestProfilesSubTab('connections')
+                const settingsTab = app.tabs.find(tab => tab instanceof SettingsTabComponent) as SettingsTabComponent | undefined
+                if (settingsTab) {
+                    settingsTab.activeTab = 'profiles'
+                    app.selectTab(settingsTab)
+                } else {
+                    app.openNewTabRaw({
+                        type: SettingsTabComponent,
+                        inputs: { activeTab: 'profiles' },
+                    })
+                }
+            } else if (hotkey.startsWith('settings-tab.')) {
                 const id = hotkey.substring(hotkey.indexOf('.') + 1)
                 app.openNewTabRaw({
                     type: SettingsTabComponent,

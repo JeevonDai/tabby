@@ -7,6 +7,7 @@ import { interval } from 'rxjs'
 import { AppService, BaseTabComponent, ConfigService, HostAppService, Profile, SelectorService, ProfilesService, PromptModalComponent, PlatformService, BaseComponent, PartialProfile, ProfileProvider, TranslateService, Platform, ProfileGroup, PartialProfileGroup, QuickConnectProfileProvider, NotificationsService, MenuItemOptions, SplitTabComponent } from 'tabby-core'
 import { EditProfileModalComponent } from './editProfileModal.component'
 import { EditProfileGroupModalComponent, EditProfileGroupModalComponentResult } from './editProfileGroupModal.component'
+import { SettingsNavigationService } from '../services/settingsNavigation.service'
 
 _('Filter')
 _('Ungrouped')
@@ -89,6 +90,7 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
         private notifications: NotificationsService,
         private app: AppService,
         private changeDetector: ChangeDetectorRef,
+        private settingsNavigation: SettingsNavigationService,
     ) {
         super()
         this.profileProviders.sort((a, b) => a.name.localeCompare(b.name))
@@ -111,6 +113,13 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
         if (pending) {
             await this.newProfileFromType(pending.type, pending.templateId)
         }
+        const pendingProfilesSubTab = this.settingsNavigation.consumePendingProfilesSubTab()
+        if (pendingProfilesSubTab) {
+            this.activeProfilesSubTab = pendingProfilesSubTab
+        }
+        this.subscribeUntilDestroyed(this.settingsNavigation.profilesSubTabRequest$, subTab => {
+            this.activeProfilesSubTab = subTab
+        })
         this.subscribeUntilDestroyed(this.app.tabsChanged$, () => this.refreshConnectionLaunchStates())
         this.subscribeUntilDestroyed(interval(1000), () => {
             if (this.activeProfilesSubTab === 'connections') {

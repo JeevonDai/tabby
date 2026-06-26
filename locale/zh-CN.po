@@ -1473,6 +1473,10 @@ msgstr "开启开发者工具"
 msgid "Open Settings"
 msgstr "打开设置"
 
+#: tabby-settings/src/hotkeys.ts:15
+msgid "Open Connections settings"
+msgstr "打开连接配置"
+
 #: tabby-settings/src/hotkeys.ts:25
 msgid "Open settings tab: {tab}"
 msgstr "打开设置标签页：{tab}"
