@@ -1,9 +1,10 @@
 import { marker as _ } from '@biesbjerg/ngx-translate-extract-marker'
 import deepClone from 'clone-deep'
-import { Component, Inject } from '@angular/core'
+import { ChangeDetectorRef, Component, Inject } from '@angular/core'
 import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop'
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap'
-import { ConfigService, HostAppService, Profile, SelectorService, ProfilesService, PromptModalComponent, PlatformService, BaseComponent, PartialProfile, ProfileProvider, TranslateService, Platform, ProfileGroup, PartialProfileGroup, QuickConnectProfileProvider, NotificationsService, MenuItemOptions } from 'tabby-core'
+import { interval } from 'rxjs'
+import { AppService, BaseTabComponent, ConfigService, HostAppService, Profile, SelectorService, ProfilesService, PromptModalComponent, PlatformService, BaseComponent, PartialProfile, ProfileProvider, TranslateService, Platform, ProfileGroup, PartialProfileGroup, QuickConnectProfileProvider, NotificationsService, MenuItemOptions, SplitTabComponent } from 'tabby-core'
 import { EditProfileModalComponent } from './editProfileModal.component'
 import { EditProfileGroupModalComponent, EditProfileGroupModalComponentResult } from './editProfileGroupModal.component'
 
@@ -38,6 +39,14 @@ interface ConnectionGroupSection {
     name: string
     profiles: PartialProfile<Profile>[]
     textColor: string|null
+}
+
+type ConnectionLaunchState = 'none' | 'connected' | 'disconnected'
+
+interface ConnectableTabLike extends BaseTabComponent {
+    profile?: { id?: string }
+    session?: { open?: boolean } | null
+    reconnect (): Promise<void>
 }
 
 /** @hidden */
@@ -78,6 +87,8 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
         private platform: PlatformService,
         private translate: TranslateService,
         private notifications: NotificationsService,
+        private app: AppService,
+        private changeDetector: ChangeDetectorRef,
     ) {
         super()
         this.profileProviders.sort((a, b) => a.name.localeCompare(b.name))
@@ -100,6 +111,16 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
         if (pending) {
             await this.newProfileFromType(pending.type, pending.templateId)
         }
+        this.subscribeUntilDestroyed(this.app.tabsChanged$, () => this.refreshConnectionLaunchStates())
+        this.subscribeUntilDestroyed(interval(1000), () => {
+            if (this.activeProfilesSubTab === 'connections') {
+                this.refreshConnectionLaunchStates()
+            }
+        })
+    }
+
+    private refreshConnectionLaunchStates (): void {
+        this.changeDetector.markForCheck()
     }
 
     async refreshProfiles (): Promise<void> {
@@ -129,12 +150,73 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
         void this.launchProfileAsync(profile)
     }
 
+    getConnectionLaunchState (profile: PartialProfile<Profile>): ConnectionLaunchState {
+        if (!profile.id) {
+            return 'none'
+        }
+        const tab = this.findConnectableTabForProfile(profile.id)
+        if (!tab) {
+            return 'none'
+        }
+        return tab.session?.open ? 'connected' : 'disconnected'
+    }
+
+    getConnectionLaunchIconClass (profile: PartialProfile<Profile>): string {
+        const state = this.getConnectionLaunchState(profile)
+        if (state === 'connected') {
+            return 'text-success'
+        }
+        if (state === 'disconnected') {
+            return 'text-danger'
+        }
+        return 'text-muted'
+    }
+
+    private findConnectableTabForProfile (profileId: string): ConnectableTabLike | null {
+        for (const topTab of this.app.tabs) {
+            const childTabs = topTab instanceof SplitTabComponent
+                ? topTab.getAllTabs()
+                : [topTab]
+            for (const tab of childTabs) {
+                const candidate = tab as ConnectableTabLike
+                if (candidate.profile?.id === profileId && typeof candidate.reconnect === 'function') {
+                    return candidate
+                }
+            }
+        }
+        return null
+    }
+
+    private focusConnectableTab (tab: BaseTabComponent): void {
+        const parentSplit = this.app.getParentTab(tab)
+        if (parentSplit) {
+            this.app.selectTab(parentSplit)
+            parentSplit.focus(tab)
+        } else {
+            this.app.selectTab(tab)
+        }
+    }
+
     async launchProfileAsync (profile: PartialProfile<Profile>): Promise<void> {
         if (profile.type === 'ssh' && this.sshNeedsPassword(profile)) {
             if (!await this.promptAndSaveSSHPassword(profile)) {
                 return
             }
         }
+        const tab = profile.id ? this.findConnectableTabForProfile(profile.id) : null
+        const state = this.getConnectionLaunchState(profile)
+
+        if (state === 'connected' && tab) {
+            this.focusConnectableTab(tab)
+            return
+        }
+
+        if (state === 'disconnected' && tab) {
+            this.focusConnectableTab(tab)
+            await tab.reconnect()
+            return
+        }
+
         this.profilesService.openNewTabForProfile(profile)
     }
 

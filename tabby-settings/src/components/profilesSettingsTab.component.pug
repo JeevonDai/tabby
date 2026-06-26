@@ -185,7 +185,7 @@ ul.nav-tabs(ngbNav, #nav='ngbNav', [(activeId)]='activeProfilesSubTab')
                                             )
                                         td.text-end.connection-actions-cell
                                             button.btn.btn-sm.btn-link((click)='launchProfile(profile)')
-                                                i.fas.fa-play
+                                                i.fas.fa-play([class]='getConnectionLaunchIconClass(profile)')
                                             button.btn.btn-sm.btn-link((click)='editProfile(profile)')
                                                 i.fas.fa-pencil-alt
                                             button.btn.btn-sm.btn-link((click)='duplicateConnectionProfile(profile)')
