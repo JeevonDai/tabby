@@ -12,7 +12,7 @@
         select.form-control([(ngModel)]='config.store.language', (ngModelChange)='config.save()')
             option([ngValue]='null', translate) Automatic
             option(
-                [value]='lang.code',
+                [ngValue]='lang.code',
                 *ngFor='let lang of allLanguages'
             ) {{lang.name}}
 

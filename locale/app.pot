@@ -2573,3 +2573,122 @@ msgstr ""
 msgctxt "[Dynamic] port forwarding"
 msgid "id.port-forwarding.dynamic"
 msgstr ""
+
+#: tabby-settings/src/components/profilesSettingsTab.component.ts:17
+msgid "All groups"
+msgstr ""
+
+#: tabby-settings/src/components/profilesSettingsTab.component.ts:19
+msgid "Detailed edit"
+msgstr ""
+
+#: tabby-terminal/src/terminalContextMenu.ts:30
+msgid "Export to file"
+msgstr ""
+
+#: tabby-settings/src/components/profilesSettingsTab.component.ts:11
+msgid "New SSH connection"
+msgstr ""
+
+#: tabby-settings/src/components/profilesSettingsTab.component.ts:13
+msgid "New Serial connection"
+msgstr ""
+
+#: tabby-settings/src/components/profilesSettingsTab.component.ts:12
+msgid "New Telnet connection"
+msgstr ""
+
+#: tabby-settings/src/components/profilesSettingsTab.component.ts:14
+msgid "New raw socket connection"
+msgstr ""
+
+#: tabby-terminal/src/api/baseTerminalTab.component.ts:850
+msgid "No session log file. Start session log first."
+msgstr ""
+
+#: tabby-settings/src/components/profilesSettingsTab.component.ts:16
+msgid "No template found for {type}"
+msgstr ""
+
+#: tabby-terminal/src/hotkeys.ts:122
+msgid "Open session log file in folder"
+msgstr ""
+
+#: tabby-terminal/src/api/baseTerminalTab.component.ts:807
+msgid "Recording session log"
+msgstr ""
+
+#: tabby-terminal/src/terminalContextMenu.ts:43
+msgid "Saved to {path}"
+msgstr ""
+
+#: tabby-serial/src/components/serialSettingsTab.component.pug:3
+msgid "Serial (COM) connection management is done through the \"Profiles & connections\" tab"
+msgstr ""
+
+#: tabby-terminal/src/api/baseTerminalTab.component.ts:828
+msgid "Session log is not available"
+msgstr ""
+
+#: tabby-terminal/src/api/baseTerminalTab.component.ts:835
+msgid "Session log started: {path}"
+msgstr ""
+
+#: tabby-terminal/src/api/baseTerminalTab.component.ts:844
+msgid "Session log stopped: {path}"
+msgstr ""
+
+#: locale/tmp-html/tabby-terminal/src/components/terminalSettingsTab.component.html:217
+#: locale/tmp-html/tabby-terminal/src/components/terminalToolbar.component.html:23
+msgid "Session log"
+msgstr ""
+
+#: tabby-ssh/src/components/sshSettingsTab.component.pug:1
+msgid "SSH"
+msgstr ""
+
+#: tabby-terminal/src/terminalContextMenu.ts:24
+#: tabby-terminal/src/api/baseTerminalTab.component.ts:808
+msgid "Start session log"
+msgstr ""
+
+#: tabby-terminal/src/terminalContextMenu.ts:23
+msgid "Stop session log"
+msgstr ""
+
+#: tabby-telnet/src/components/telnetSettingsTab.component.pug:3
+msgid "Telnet connection management is done through the \"Profiles & connections\" tab"
+msgstr ""
+
+#: tabby-settings/src/components/profilesSettingsTab.component.ts:18
+#: tabby-settings/src/components/profilesSettingsTab.component.pug:143
+msgid "Telnet connections"
+msgstr ""
+
+#: tabby-terminal/src/hotkeys.ts:118
+msgid "Toggle timestamped session log"
+msgstr ""
+
+#: locale/tmp-html/tabby-terminal/src/components/terminalSettingsTab.component.html:232
+msgid "Log directory"
+msgstr ""
+
+#: locale/tmp-html/tabby-terminal/src/components/terminalSettingsTab.component.html:233
+msgid "Leave empty to use the session-logs folder next to your config file"
+msgstr ""
+
+#: locale/tmp-html/tabby-terminal/src/components/terminalSettingsTab.component.html:221
+msgid "Timestamp format"
+msgstr ""
+
+#: locale/tmp-html/tabby-terminal/src/components/terminalSettingsTab.component.html:222
+msgid "Use YYYY, MM, DD, HH, mm, ss, and SSS wrapped in curly braces as placeholders"
+msgstr ""
+
+#: tabby-settings/src/components/profilesSettingsTab.component.ts:15
+msgid "Cannot edit profile: connection plugin for \"{type}\" is not available"
+msgstr ""
+
+#: tabby-telnet/src/components/telnetSettingsTab.component.pug:1
+msgid "Telnet"
+msgstr ""

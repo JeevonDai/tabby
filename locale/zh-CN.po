@@ -1977,7 +1977,7 @@ msgstr "设置"
 
 #: locale/tmp-html/tabby-local/src/components/shellSettingsTab.component.html:2
 msgid "Shell"
-msgstr "Shell"
+msgstr "命令行"
 
 #: tabby-terminal/src/api/baseTerminalTab.component.ts:593
 msgid "Shell does not support current path detection"
@@ -2331,6 +2331,14 @@ msgstr "顶部"
 msgid "Trim whitespace and newlines"
 msgstr "去除空格和换行"
 
+#: locale/tmp-html/tabby-terminal/src/components/terminalSettingsTab.component.html:120
+msgid "Replace line breaks with spaces"
+msgstr "将换行符替换为空格"
+
+#: locale/tmp-html/tabby-terminal/src/components/terminalSettingsTab.component.html:121
+msgid "Flatten pasted text into a single line for terminals that do not support multiline paste"
+msgstr "将粘贴内容合并为单行（适用于不支持多行粘贴的终端）"
+
 #: tabby-core/src/services/config.service.ts:428
 msgid "Try again"
 msgstr "再试一次"
@@ -2579,3 +2587,122 @@ msgstr "缩小"
 msgctxt "[Dynamic] port forwarding"
 msgid "id.port-forwarding.dynamic"
 msgstr "动态端口转发"
+
+#: tabby-settings/src/components/profilesSettingsTab.component.ts:17
+msgid "All groups"
+msgstr "所有分组"
+
+#: tabby-settings/src/components/profilesSettingsTab.component.ts:19
+msgid "Detailed edit"
+msgstr "详细编辑"
+
+#: tabby-terminal/src/terminalContextMenu.ts:30
+msgid "Export to file"
+msgstr "导出到文件"
+
+#: tabby-settings/src/components/profilesSettingsTab.component.ts:11
+msgid "New SSH connection"
+msgstr "新建 SSH 连接"
+
+#: tabby-settings/src/components/profilesSettingsTab.component.ts:13
+msgid "New Serial connection"
+msgstr "新建 Serial 连接"
+
+#: tabby-settings/src/components/profilesSettingsTab.component.ts:12
+msgid "New Telnet connection"
+msgstr "新建 Telnet 连接"
+
+#: tabby-settings/src/components/profilesSettingsTab.component.ts:14
+msgid "New raw socket connection"
+msgstr "新建原始 Socket 连接"
+
+#: tabby-terminal/src/api/baseTerminalTab.component.ts:850
+msgid "No session log file. Start session log first."
+msgstr "没有会话日志文件，请先开始会话日志。"
+
+#: tabby-settings/src/components/profilesSettingsTab.component.ts:16
+msgid "No template found for {type}"
+msgstr "未找到 {type} 的模板"
+
+#: tabby-terminal/src/hotkeys.ts:122
+msgid "Open session log file in folder"
+msgstr "在文件夹中打开会话日志文件"
+
+#: tabby-terminal/src/api/baseTerminalTab.component.ts:807
+msgid "Recording session log"
+msgstr "正在记录会话日志"
+
+#: tabby-terminal/src/terminalContextMenu.ts:43
+msgid "Saved to {path}"
+msgstr "已保存到 {path}"
+
+#: tabby-serial/src/components/serialSettingsTab.component.pug:3
+msgid "Serial (COM) connection management is done through the \"Profiles & connections\" tab"
+msgstr "Serial (COM) 连接管理请在「配置与连接」标签页中进行"
+
+#: tabby-terminal/src/api/baseTerminalTab.component.ts:828
+msgid "Session log is not available"
+msgstr "会话日志不可用"
+
+#: tabby-terminal/src/api/baseTerminalTab.component.ts:835
+msgid "Session log started: {path}"
+msgstr "会话日志已开始：{path}"
+
+#: tabby-terminal/src/api/baseTerminalTab.component.ts:844
+msgid "Session log stopped: {path}"
+msgstr "会话日志已停止：{path}"
+
+#: locale/tmp-html/tabby-terminal/src/components/terminalSettingsTab.component.html:217
+#: locale/tmp-html/tabby-terminal/src/components/terminalToolbar.component.html:23
+msgid "Session log"
+msgstr "会话日志"
+
+#: tabby-ssh/src/components/sshSettingsTab.component.pug:1
+msgid "SSH"
+msgstr "SSH"
+
+#: tabby-terminal/src/terminalContextMenu.ts:24
+#: tabby-terminal/src/api/baseTerminalTab.component.ts:808
+msgid "Start session log"
+msgstr "开始会话日志"
+
+#: tabby-terminal/src/terminalContextMenu.ts:23
+msgid "Stop session log"
+msgstr "停止会话日志"
+
+#: tabby-telnet/src/components/telnetSettingsTab.component.pug:3
+msgid "Telnet connection management is done through the \"Profiles & connections\" tab"
+msgstr "Telnet 连接管理请在「配置与连接」标签页中进行"
+
+#: tabby-settings/src/components/profilesSettingsTab.component.ts:18
+#: tabby-settings/src/components/profilesSettingsTab.component.pug:143
+msgid "Telnet connections"
+msgstr "Telnet 连接"
+
+#: tabby-terminal/src/hotkeys.ts:118
+msgid "Toggle timestamped session log"
+msgstr "切换带时间戳的会话日志"
+
+#: locale/tmp-html/tabby-terminal/src/components/terminalSettingsTab.component.html:232
+msgid "Log directory"
+msgstr "日志目录"
+
+#: locale/tmp-html/tabby-terminal/src/components/terminalSettingsTab.component.html:233
+msgid "Leave empty to use the session-logs folder next to your config file"
+msgstr "留空则使用配置文件旁边的 session-logs 文件夹"
+
+#: locale/tmp-html/tabby-terminal/src/components/terminalSettingsTab.component.html:221
+msgid "Timestamp format"
+msgstr "时间戳格式"
+
+#: locale/tmp-html/tabby-terminal/src/components/terminalSettingsTab.component.html:222
+msgid "Use YYYY, MM, DD, HH, mm, ss, and SSS wrapped in curly braces as placeholders"
+msgstr "使用花括号包裹 YYYY、MM、DD、HH、mm、ss 和 SSS 作为占位符"
+
+#: tabby-settings/src/components/profilesSettingsTab.component.ts:15
+msgid "Cannot edit profile: connection plugin for \"{type}\" is not available"
+msgstr "无法编辑配置：连接插件 \"{type}\" 不可用"
+
+#: tabby-telnet/src/components/telnetSettingsTab.component.pug:1
+msgid "Telnet"
+msgstr "Telnet"

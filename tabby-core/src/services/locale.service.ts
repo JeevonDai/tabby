@@ -52,6 +52,8 @@ registerLocaleData(localeSV)
 registerLocaleData(localeTR)
 registerLocaleData(localeUK)
 registerLocaleData(localeZH)
+registerLocaleData(localeZH, 'zh-CN')
+registerLocaleData(localeZH, 'zh-TW')
 
 function flattenMessageFormatTranslation (po: any) {
     const translation = {}
@@ -224,12 +226,43 @@ export class LocaleService {
         }.bind(translate)
     }
 
+    private static resolveSystemLanguage (systemLanguage: string): string | null {
+        if (LocaleService.allLanguages.some(x => x.code === systemLanguage)) {
+            return systemLanguage
+        }
+
+        const normalized = systemLanguage.toLowerCase()
+        const aliases: Record<string, string> = {
+            'zh-hans': 'zh-CN',
+            'zh-hans-cn': 'zh-CN',
+            'zh-cn': 'zh-CN',
+            'zh-sg': 'zh-CN',
+            'zh-hant': 'zh-TW',
+            'zh-hant-tw': 'zh-TW',
+            'zh-tw': 'zh-TW',
+            'zh-hk': 'zh-TW',
+            'zh-mo': 'zh-TW',
+        }
+        if (aliases[normalized]) {
+            return aliases[normalized]
+        }
+        if (normalized === 'zh' || normalized.startsWith('zh-hans')) {
+            return 'zh-CN'
+        }
+        if (normalized.startsWith('zh-hant') || normalized.startsWith('zh-tw') || normalized.startsWith('zh-hk')) {
+            return 'zh-TW'
+        }
+
+        const prefix = normalized.split('-')[0]
+        return LocaleService.allLanguages.find(x => x.code.toLowerCase().startsWith(`${prefix}-`))?.code ?? null
+    }
+
     refresh (): void {
         let lang = this.config.store.language
         if (!lang) {
             for (const systemLanguage of navigator.languages) {
-                if (!lang && LocaleService.allLanguages.some(x => x.code === systemLanguage)) {
-                    lang = systemLanguage
+                if (!lang) {
+                    lang = LocaleService.resolveSystemLanguage(systemLanguage)
                 }
             }
         }
@@ -247,6 +280,7 @@ export class LocaleService {
         }
 
         this.translate.setDefaultLang(lang)
+        this.translate.use(lang)
 
         this.locale = lang
         this.localeChanged.next(lang)

@@ -9,8 +9,10 @@
     3. 目标路径可写时无需管理员权限；写入 Program Files 等受保护目录时自动请求 UAC
 
 .PARAMETER Plugin
-    要部署的插件名称，支持 settings、telnet、terminal。
-    可以同时指定多个（逗号分隔），例如 -Plugin settings,telnet。
+    要部署的插件名称（不含 tabby- 前缀），例如 settings、core、electron。
+    可以同时指定多个（逗号分隔），例如 -Plugin core,settings,terminal。
+    也支持传入完整目录名 tabby-settings。
+    留空或设为 all 时部署仓库内全部内置插件。
 
 .PARAMETER TabbyPath
     Tabby 安装根目录。默认自动检测 %LOCALAPPDATA%\Tabby 和 C:\Program Files\Tabby，
@@ -23,7 +25,7 @@
     .\scripts\deploy-plugins.ps1 -Plugin settings
 
 .EXAMPLE
-    .\scripts\deploy-plugins.ps1 -Plugin settings,telnet,terminal
+    .\scripts\deploy-plugins.ps1 -Plugin core,settings,terminal,electron
 
 .EXAMPLE
     .\scripts\deploy-plugins.ps1 -Plugin telnet -SkipBuild
@@ -104,6 +106,35 @@ function Invoke-RobocopyMirror {
     }
 }
 
+function Get-BuiltinPluginNames {
+    $names = @()
+    Get-ChildItem -Path $RepoRoot -Directory -Filter 'tabby-*' | ForEach-Object {
+        $pkgPath = Join-Path $_.FullName 'package.json'
+        if (-not (Test-Path $pkgPath)) {
+            return
+        }
+        try {
+            $pkg = Get-Content $pkgPath -Raw | ConvertFrom-Json
+        } catch {
+            return
+        }
+        if ($pkg.keywords -contains 'tabby-builtin-plugin' -and $pkg.scripts.build) {
+            $names += $_.Name.Substring(6)
+        }
+    }
+    return $names | Sort-Object -Unique
+}
+
+function Normalize-PluginName {
+    param([string]$Name)
+
+    $Name = $Name.Trim()
+    if ($Name.StartsWith('tabby-')) {
+        $Name = $Name.Substring(6)
+    }
+    return $Name
+}
+
 function Invoke-BuildPlugin {
     param(
         [string]$PluginName
@@ -160,10 +191,19 @@ function Invoke-DeployPlugin {
 }
 
 # 解析插件列表
-$PluginList = $Plugin -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+$ValidPlugins = @(Get-BuiltinPluginNames)
+if ($ValidPlugins.Count -eq 0) {
+    Write-Error '未在仓库中找到可部署的内置插件（tabby-* 且含 build 脚本）。'
+    exit 1
+}
+
+if (-not $Plugin -or ($Plugin.Trim() -eq 'all')) {
+    $PluginList = $ValidPlugins
+} else {
+    $PluginList = $Plugin -split ',' | ForEach-Object { Normalize-PluginName $_ } | Where-Object { $_ }
+}
 
 # 验证插件名称
-$ValidPlugins = @('settings', 'telnet', 'terminal')
 foreach ($p in $PluginList) {
     if ($p -notin $ValidPlugins) {
         Write-Error "不支持的插件: $p`n当前支持的插件: $($ValidPlugins -join ', ')"

@@ -5,16 +5,13 @@ import { WindowSettingsTabComponent } from './components/windowSettingsTab.compo
 import { VaultSettingsTabComponent } from './components/vaultSettingsTab.component'
 import { ConfigSyncSettingsTabComponent } from './components/configSyncSettingsTab.component'
 import { ProfilesSettingsTabComponent } from './components/profilesSettingsTab.component'
-import { TranslateService } from 'tabby-core'
 
 /** @hidden */
 @Injectable()
 export class HotkeySettingsTabProvider extends SettingsTabProvider {
     id = 'hotkeys'
     icon = 'keyboard'
-    title = this.translate.instant('Hotkeys')
-
-    constructor (private translate: TranslateService) { super() }
+    title = 'Hotkeys'
 
     getComponentType (): any {
         return HotkeySettingsTabComponent
@@ -27,9 +24,7 @@ export class HotkeySettingsTabProvider extends SettingsTabProvider {
 export class WindowSettingsTabProvider extends SettingsTabProvider {
     id = 'window'
     icon = 'window-maximize'
-    title = this.translate.instant('Window')
-
-    constructor (private translate: TranslateService) { super() }
+    title = 'Window'
 
     getComponentType (): any {
         return WindowSettingsTabComponent
@@ -55,10 +50,8 @@ export class VaultSettingsTabProvider extends SettingsTabProvider {
 export class ProfilesSettingsTabProvider extends SettingsTabProvider {
     id = 'profiles'
     icon = 'window-restore'
-    title = this.translate.instant('Profiles & connections')
+    title = 'Profiles & connections'
     prioritized = true
-
-    constructor (private translate: TranslateService) { super() }
 
     getComponentType (): any {
         return ProfilesSettingsTabComponent
@@ -70,9 +63,7 @@ export class ProfilesSettingsTabProvider extends SettingsTabProvider {
 export class ConfigSyncSettingsTabProvider extends SettingsTabProvider {
     id = 'config-sync'
     icon = 'cloud'
-    title = this.translate.instant('Config sync')
-
-    constructor (private translate: TranslateService) { super() }
+    title = 'Config sync'
 
     getComponentType (): any {
         return ConfigSyncSettingsTabComponent
