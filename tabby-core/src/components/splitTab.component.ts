@@ -812,6 +812,16 @@ export class SplitTabComponent extends BaseTabComponent implements AfterViewInit
         }
     }
 
+    get titleColor (): string|null {
+        return this.getFocusedTab()?.titleColor ?? this.getAllTabs()[0]?.titleColor ?? null
+    }
+
+    set titleColor (color: string|null) {
+        for (const t of this.getAllTabs()) {
+            t.titleColor = color
+        }
+    }
+
     equalize (): void {
         this.root.normalize()
         this.root.equalize()

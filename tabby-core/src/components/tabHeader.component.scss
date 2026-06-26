@@ -65,6 +65,10 @@ $tabs-height: 38px;
         text-overflow: ellipsis;
         min-width: 0;
         align-self: center;
+
+        &.custom-title-color {
+            color: var(--tab-title-color) !important;
+        }
     }
 
     .index + .name {

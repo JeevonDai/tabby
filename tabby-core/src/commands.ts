@@ -29,7 +29,7 @@ export class CoreCommandProvider extends CommandProvider {
             {
                 id: 'core:profile-selector',
                 locations: [CommandLocation.LeftToolbar, CommandLocation.StartPage],
-                label: this.translate.instant('Profiles & connections'),
+                label: this.translate.instant('Profiles'),
                 icon: this.hostApp.platform === Platform.Web
                     ? require('./icons/plus.svg')
                     : require('./icons/profiles.svg'),

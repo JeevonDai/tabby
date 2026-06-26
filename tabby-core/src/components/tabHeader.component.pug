@@ -16,7 +16,9 @@ profile-icon(
     i.fas.fa-thumbtack
 
 .name(
-    [class.no-hover]='config.store.terminal.hideCloseButton && config.store.terminal.hideTabOptionsButton'
+    [class.no-hover]='config.store.terminal.hideCloseButton && config.store.terminal.hideTabOptionsButton',
+    [class.custom-title-color]='displayTitleColor',
+    [style.--tab-title-color]='displayTitleColor',
     cdkDrag,
     cdkDragRootElement='tab-header',
     [cdkDragData]='tab',

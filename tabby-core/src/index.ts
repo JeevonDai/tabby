@@ -226,8 +226,8 @@ export default class AppModule { // eslint-disable-line @typescript-eslint/no-ex
 
         if (provider instanceof QuickConnectProfileProvider) {
             options.push({
-                name: this.translate.instant('Quick connect'),
-                freeInputPattern: this.translate.instant('Connect to "%s"...'),
+                name: this.translate.instant('Quick profile'),
+                freeInputPattern: this.translate.instant('Profile "%s"...'),
                 icon: 'fas fa-arrow-right',
                 description: `(${provider.name.toUpperCase()})`,
                 callback: query => {

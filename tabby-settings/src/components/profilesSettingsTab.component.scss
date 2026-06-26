@@ -19,33 +19,66 @@ profile-icon {
     background-color: var(--theme-bg-less-2);
 }
 
-.telnet-group-filter {
-    max-width: 220px;
-}
-
-.telnet-profile-table {
+.connection-profile-table {
     table {
-        min-width: 760px;
-    }
-
-    th:first-child,
-    td.telnet-group-marker-cell {
-        width: 1.25rem;
-    }
-
-    .telnet-port-cell {
-        width: 7rem;
-    }
-
-    .telnet-group-marker {
-        width: 0.65rem;
-        height: 1.75rem;
-        border-radius: 4px;
-        opacity: 0.9;
+        min-width: 520px;
     }
 
     .btn-link {
         padding-left: 0.35rem;
         padding-right: 0.35rem;
+    }
+
+    .connection-type-cell {
+        width: 1.5rem;
+        text-align: center;
+        color: var(--theme-fg-less);
+    }
+
+    .connection-drag-cell {
+        width: 1.25rem;
+        padding-right: 0;
+        cursor: grab;
+
+        .cdk-drag-handle {
+            cursor: grab;
+        }
+    }
+}
+
+.connections-grouped-view {
+    .connection-group-section {
+        margin-bottom: 1rem;
+    }
+
+    .connection-group-header {
+        font-weight: 600;
+        font-size: 0.85rem;
+        padding: 0.35rem 0.5rem;
+        margin-bottom: 0.25rem;
+        border-radius: 0.25rem;
+        background: var(--theme-bg-less);
+    }
+
+    .connection-actions-cell {
+        width: 6.5rem;
+        min-width: 6.5rem;
+        white-space: nowrap;
+        text-align: right;
+    }
+
+    .connection-draft-row td {
+        border-top: 1px dashed var(--theme-bg-less);
+    }
+
+    .connection-profile-row.cdk-drag-preview {
+        display: table;
+        background: var(--theme-bg);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .connection-drop-hint td {
+        font-size: 0.85rem;
+        padding: 0.5rem;
     }
 }

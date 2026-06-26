@@ -7,6 +7,4 @@ export class TelnetConfigProvider extends ConfigProvider {
             'restart-telnet-session': [],
         },
     }
-
-    platformDefaults = { }
 }

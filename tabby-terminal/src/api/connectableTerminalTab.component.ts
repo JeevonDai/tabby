@@ -46,10 +46,10 @@ export abstract class ConnectableTerminalTabComponent<P extends ConnectableTermi
     }
 
     protected onFrontendReady (): void {
-        this.initializeSession().then(() => {
+        super.onFrontendReady()
+        void this.initializeSession().then(() => {
             this.clearServiceMessagesOnConnect()
         })
-        super.onFrontendReady()
     }
 
     /**

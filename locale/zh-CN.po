@@ -414,6 +414,11 @@ msgstr "正在连接"
 msgid "Connection"
 msgstr "连接"
 
+#: tabby-settings/src/components/profilesSettingsTab.component.pug:143
+#: tabby-settings/src/components/profilesSettingsTab.component.pug:175
+msgid "Connections"
+msgstr "连接"
+
 #: locale/tmp-html/tabby-settings/src/components/configSyncSettingsTab.component.html:26
 msgid "Connection failed: {error}"
 msgstr "连接失败：{error}"
@@ -531,6 +536,14 @@ msgstr "默认“连接到”类型"
 #: locale/tmp-html/tabby-settings/src/components/profilesSettingsTab.component.html:93
 msgid "Default connection type used by quick connect feature (ex. SSH, Telnet)"
 msgstr "快速连接功能使用的默认连接类型（例如 SSH、Telnet）"
+
+#: tabby-settings/src/components/profilesSettingsTab.component.pug:303
+msgid "Default quick profile type"
+msgstr "默认快速配置类型"
+
+#: tabby-settings/src/components/profilesSettingsTab.component.pug:304
+msgid "Default profile type used by quick profile entry (ex. SSH, Telnet)"
+msgstr "快速输入配置时使用的默认配置类型（例如 SSH、Telnet）"
 
 #: locale/tmp-html/tabby-settings/src/components/profilesSettingsTab.component.html:8
 msgid "Default profile for new tabs"
@@ -1673,6 +1686,16 @@ msgstr "将 Tabby 的所有配置放入保险库"
 #: tabby-core/src/services/profiles.service.ts:295
 msgid "Quick connect"
 msgstr "快速连接"
+
+#: tabby-core/src/index.ts:227
+#: tabby-core/src/services/profiles.service.ts:386
+msgid "Quick profile"
+msgstr "快速配置"
+
+#: tabby-core/src/index.ts:228
+#: tabby-core/src/services/profiles.service.ts:387
+msgid "Profile \"%s\"..."
+msgstr "配置 \"%s\"..."
 
 #: tabby-core/src/services/config.service.ts:430
 #: tabby-core/src/services/config.service.ts:444

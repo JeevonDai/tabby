@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
-import { Component, Input, Optional, Inject, HostBinding, HostListener, NgZone } from '@angular/core'
+import { Component, Input, Optional, Inject, HostBinding, HostListener, NgZone, ChangeDetectorRef } from '@angular/core'
 import { auditTime } from 'rxjs'
 import { TabContextMenuItemProvider } from '../api/tabContextMenuProvider'
 import { BaseTabComponent } from './baseTab.component'
@@ -32,6 +32,7 @@ export class TabHeaderComponent extends BaseComponent {
         private hotkeys: HotkeysService,
         private platform: PlatformService,
         private zone: NgZone,
+        private cdr: ChangeDetectorRef,
         @Optional() @Inject(TabContextMenuItemProvider) protected contextMenuProviders: TabContextMenuItemProvider[],
     ) {
         super()
@@ -53,6 +54,23 @@ export class TabHeaderComponent extends BaseComponent {
                 this.progress = progress
             })
         })
+        this.subscribeUntilDestroyed(this.app.tabsChanged$, () => {
+            this.zone.run(() => this.cdr.detectChanges())
+        })
+    }
+
+    get displayTitleColor (): string|null {
+        return this.tab?.titleColor ?? null
+    }
+
+    @HostBinding('class.custom-title-color')
+    get hasCustomTitleColor (): boolean {
+        return !!this.displayTitleColor
+    }
+
+    @HostBinding('style.--tab-title-color')
+    get customTitleColorVar (): string|null {
+        return this.displayTitleColor
     }
 
     async buildContextMenu (): Promise<MenuItemOptions[]> {

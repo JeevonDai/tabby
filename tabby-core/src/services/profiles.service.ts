@@ -3,6 +3,7 @@ import { Subject } from 'rxjs'
 import { TranslateService } from '@ngx-translate/core'
 import { NewTabParameters } from './tabs.service'
 import { BaseTabComponent } from '../components/baseTab.component'
+import { SplitTabComponent } from '../components/splitTab.component'
 import { QuickConnectProfileProvider, PartialProfile, PartialProfileGroup, Profile, ProfileGroup, ProfileProvider } from '../api/profileProvider'
 import { SelectorOption } from '../api/selector'
 import { AppService } from './app.service'
@@ -148,12 +149,58 @@ export class ProfilesService {
     async writeProfile (profile: PartialProfile<Profile>): Promise<void> {
         const cProfile = this.config.store.profiles.find(p => p.id === profile.id)
         if (cProfile) {
+            const updated = deepClone(profile)
             // Fully replace the config
             for (const k in cProfile) {
                 // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
                 delete cProfile[k]
             }
-            Object.assign(cProfile, profile)
+            Object.assign(cProfile, updated)
+            this.syncTabAppearanceForProfile(updated)
+        }
+    }
+
+    syncTabAppearanceForProfile (profile: PartialProfile<Profile>): void {
+        if (!profile.id) {
+            return
+        }
+        const titleColor = profile.group ? this.getProfileGroupColor(profile.group) : null
+        const profileGroupName = profile.group ? this.resolveProfileGroupName(profile.group) : undefined
+
+        for (const topTab of this.app.tabs) {
+            this.applyTabAppearanceForProfile(topTab, profile.id, profile.group ?? '', titleColor, profileGroupName)
+        }
+        this.app.emitTabsChanged()
+    }
+
+    private applyTabAppearanceForProfile (
+        tab: BaseTabComponent,
+        profileId: string,
+        profileGroup: string,
+        titleColor: string|null,
+        profileGroupName?: string,
+    ): void {
+        if (tab instanceof SplitTabComponent) {
+            for (const child of tab.getAllTabs()) {
+                this.applyTabAppearanceForProfile(child, profileId, profileGroup, titleColor, profileGroupName)
+            }
+            return
+        }
+
+        const tabWithProfile = tab as BaseTabComponent & {
+            profile?: { id?: string, group?: string }
+            profileGroupName?: string
+        }
+        if (!tabWithProfile.profile?.id || tabWithProfile.profile.id !== profileId) {
+            return
+        }
+
+        tab.titleColor = titleColor
+        if (profileGroupName !== undefined && 'profileGroupName' in tabWithProfile) {
+            tabWithProfile.profileGroupName = profileGroupName
+        }
+        if (tabWithProfile.profile) {
+            tabWithProfile.profile.group = profileGroup
         }
     }
 
@@ -212,8 +259,12 @@ export class ProfilesService {
             }
             if (fullProfile.color) {
                 params.inputs['color'] = fullProfile.color
-            } else if (fullProfile.group) {
-                params.inputs['color'] = this.getProfileGroupColor(fullProfile.group)
+            }
+            const groupId = profile.group || fullProfile.group
+            if (groupId) {
+                params.inputs['titleColor'] = this.getProfileGroupColor(groupId)
+            } else {
+                params.inputs['titleColor'] = null
             }
             if (fullProfile.icon) {
                 params.inputs['icon'] = fullProfile.icon
@@ -362,8 +413,8 @@ export class ProfilesService {
                 this.getProviders().forEach(provider => {
                     if (provider instanceof QuickConnectProfileProvider) {
                         options.push({
-                            name: this.translate.instant('Quick connect'),
-                            freeInputPattern: this.translate.instant('Connect to "%s"...'),
+                            name: this.translate.instant('Quick profile'),
+                            freeInputPattern: this.translate.instant('Profile "%s"...'),
                             description: `(${provider.name.toUpperCase()})`,
                             icon: 'fas fa-arrow-right',
                             weight: provider.id !== this.config.store.defaultQuickConnectProvider ? 1 : 0,
@@ -555,6 +606,7 @@ export class ProfilesService {
         } else {
             for (const profile of this.config.store.profiles.filter(x => x.group === group.id)) {
                 delete profile.group
+                this.syncTabAppearanceForProfile(profile)
             }
         }
         if (this.config.store.hotkeys['group-selectors'].hasOwnProperty(group.id)) {

@@ -47,11 +47,18 @@ export abstract class BaseTabComponent extends BaseComponent {
     hostView: ViewRef
 
     /**
-     * CSS color override for the tab's header
+     * CSS color override for the tab's header color bar and profile icon
      */
     get color (): string|null { return this._color }
     set color (value: string|null) { this._color = value }
     private _color: string|null = null
+
+    /**
+     * CSS color override for the tab title text (e.g. profile group color)
+     */
+    get titleColor (): string|null { return this._titleColor }
+    set titleColor (value: string|null) { this._titleColor = value }
+    private _titleColor: string|null = null
 
     /**
      * icon override for the tab's header

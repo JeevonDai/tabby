@@ -1,6 +1,7 @@
 import { marker as _ } from '@biesbjerg/ngx-translate-extract-marker'
 import deepClone from 'clone-deep'
 import { Component, Inject } from '@angular/core'
+import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop'
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap'
 import { ConfigService, HostAppService, Profile, SelectorService, ProfilesService, PromptModalComponent, PlatformService, BaseComponent, PartialProfile, ProfileProvider, TranslateService, Platform, ProfileGroup, PartialProfileGroup, QuickConnectProfileProvider, NotificationsService, MenuItemOptions } from 'tabby-core'
 import { EditProfileModalComponent } from './editProfileModal.component'
@@ -15,12 +16,28 @@ _('New raw socket connection')
 _('Cannot edit profile: connection plugin for "{type}" is not available')
 _('No template found for {type}')
 _('All groups')
-_('Telnet connections')
+_('Connections')
+_('Group')
+_('Host')
+_('host or host:port')
+_('user@host or user@host:port')
+_('COM port')
+_('No profiles found')
 _('Detailed edit')
+_('COM')
+_('COM / host:port / user@host:port')
+_('Password for {user}@{host}')
 
 interface CollapsableProfileGroup extends ProfileGroup {
     collapsed: boolean
     children: PartialProfileGroup<CollapsableProfileGroup>[]
+}
+
+interface ConnectionGroupSection {
+    id: string
+    name: string
+    profiles: PartialProfile<Profile>[]
+    textColor: string|null
 }
 
 /** @hidden */
@@ -29,6 +46,8 @@ interface CollapsableProfileGroup extends ProfileGroup {
     styleUrls: ['./profilesSettingsTab.component.scss'],
 })
 export class ProfilesSettingsTabComponent extends BaseComponent {
+    private static readonly CLEAR_UNGROUPED_KEY = 'tabby.connections.clearedUngrouped'
+
     builtinProfiles: PartialProfile<Profile>[] = []
     profiles: PartialProfile<Profile>[] = []
     templateProfiles: PartialProfile<Profile>[] = []
@@ -37,12 +56,17 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
     rootGroups: PartialProfileGroup<CollapsableProfileGroup>[] = []
 
     filter = ''
-    telnetGroupFilter = 'all'
+    connectionGroupFilter = 'all'
+    activeProfilesSubTab = 'profiles'
+    connectionGroupSections: ConnectionGroupSection[] = []
+    connectionProfileGroups: PartialProfileGroup<ProfileGroup>[] = []
+    connectionDrafts: Record<string, string> = {}
     Platform = Platform
     defaultSSHX11Display = this.hostApp.platform === Platform.Linux
         ? '/tmp/.X11-unix/X0'
         : 'localhost:0.0'
     private descriptionCache = new Map<string, string|null>()
+    private connectionAddressCache = new Map<string, string>()
 
     constructor (
         public config: ConfigService,
@@ -66,6 +90,7 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
     async ngOnInit (): Promise<void> {
         await this.refreshProfileGroups()
         await this.refreshProfiles()
+        await this.maybeClearUngroupedConnections()
         this.subscribeUntilDestroyed(this.config.changed$, () => this.refreshProfileGroups())
         this.subscribeUntilDestroyed(this.config.changed$, () => this.refreshProfiles())
         this.subscribeUntilDestroyed(this.profilesService.pendingProfileCreation$, type => {
@@ -89,9 +114,27 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
                 this.descriptionCache.set(p.id, this.profilesService.getDescription(p))
             }
         }
+        this.refreshConnectionGroupSections()
+    }
+
+    onConnectionGroupFilterChange (value: string): void {
+        this.connectionGroupFilter = value
+        if (this.connectionGroupFilter !== 'all' && !this.connectionDrafts[this.connectionGroupFilter]) {
+            this.connectionDrafts[this.connectionGroupFilter] = ''
+        }
+        this.refreshConnectionGroupSections()
     }
 
     launchProfile (profile: PartialProfile<Profile>): void {
+        void this.launchProfileAsync(profile)
+    }
+
+    async launchProfileAsync (profile: PartialProfile<Profile>): Promise<void> {
+        if (profile.type === 'ssh' && this.sshNeedsPassword(profile)) {
+            if (!await this.promptAndSaveSSHPassword(profile)) {
+                return
+            }
+        }
         this.profilesService.openNewTabForProfile(profile)
     }
 
@@ -118,60 +161,116 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
         return this.templateProfiles.filter(x => x.type === 'telnet')
     }
 
-    getTelnetProfiles (): PartialProfile<Profile>[] {
-        const profiles = this.customProfiles.filter(x => x.type === 'telnet' && !x.isTemplate)
+    getConnectionProfiles (): PartialProfile<Profile>[] {
+        const profiles = this.getBaseConnectionProfiles()
         return profiles
-            .filter(profile => this.isTelnetProfileVisible(profile))
-            .sort((a, b) => this.getTelnetSortKey(a).localeCompare(this.getTelnetSortKey(b)))
+            .filter(profile => this.isConnectionProfileVisible(profile))
+            .sort((a, b) => this.getConnectionSortKey(a).localeCompare(this.getConnectionSortKey(b)))
     }
 
-    getTelnetProfileGroups (): PartialProfileGroup<ProfileGroup>[] {
-        return this.profileGroups
-            .filter(group => group.editable || group.id === 'ungrouped')
-            .map(group => ({
-                id: group.id,
-                name: group.id === 'ungrouped' ? this.translate.instant('Ungrouped') : group.name,
-            }))
-    }
+    refreshConnectionGroupSections (): void {
+        this.connectionProfileGroups = this.getConnectionProfileGroups()
 
-    async newTelnetProfile (): Promise<void> {
-        const templates = this.getTelnetTemplates()
-        const template = templates.find(x => x.id === 'telnet:template') ?? templates[0]
-        const profile: PartialProfile<Profile> = template ? deepClone(template) : {
-            type: 'telnet',
-            name: '',
-            options: {
-                host: '',
-                port: 23,
-                inputMode: 'readline',
-                outputNewlines: 'crlf',
-            },
+        let visibleGroups = this.connectionProfileGroups
+        if (this.connectionGroupFilter === 'ungrouped') {
+            visibleGroups = visibleGroups.filter(group => group.id === 'ungrouped')
+        } else if (this.connectionGroupFilter !== 'all') {
+            visibleGroups = visibleGroups.filter(group => group.id === this.connectionGroupFilter)
         }
-        delete profile.id
-        profile.name = profile.name && !profile.isTemplate ? profile.name : this.translate.instant('New Telnet connection')
-        profile.group = this.telnetGroupFilter === 'all' || this.telnetGroupFilter === 'ungrouped' ? '' : this.telnetGroupFilter
-        profile.isBuiltin = false
-        profile.isTemplate = false
-        profile.icon ??= 'fas fa-network-wired'
-        profile.options ??= {}
-        profile.options.host ??= ''
-        profile.options.port ??= 23
 
-        await this.profilesService.newProfile(profile)
-        await this.config.save()
+        const profiles = this.getBaseConnectionProfiles()
+            .filter(profile => this.isProfileVisible(profile))
+            .sort((a, b) => a.name.localeCompare(b.name))
+
+        this.connectionGroupSections = visibleGroups.map(group => ({
+            id: group.id,
+            name: group.name,
+            profiles: profiles.filter(profile => (profile.group || 'ungrouped') === group.id),
+            textColor: group.id === 'ungrouped' ? null : this.profilesService.getProfileGroupColor(group.id),
+        }))
+        for (const section of this.connectionGroupSections) {
+            if (!this.connectionDrafts[section.id]) {
+                this.connectionDrafts[section.id] = ''
+            }
+        }
     }
 
-    async duplicateTelnetProfile (profile: PartialProfile<Profile>): Promise<void> {
-        const copy: PartialProfile<Profile> = deepClone(profile)
-        delete copy.id
-        copy.name = this.translate.instant('{name} copy', profile)
-        copy.isBuiltin = false
-        copy.isTemplate = false
-        await this.profilesService.newProfile(copy)
-        await this.config.save()
+    getConnectionDraft (groupId: string): string {
+        return this.connectionDrafts[groupId] ?? ''
     }
 
-    async newTelnetProfileGroup (): Promise<void> {
+    setConnectionDraft (groupId: string, value: string): void {
+        this.connectionDrafts[groupId] = value
+    }
+
+    async saveConnectionDraft (groupId: string): Promise<void> {
+        const raw = this.connectionDrafts[groupId]?.trim()
+        if (!raw) {
+            return
+        }
+        await this.createConnectionProfileFromRaw(this.detectConnectionType(raw), raw, groupId)
+        this.connectionDrafts[groupId] = ''
+        await this.refreshProfiles()
+        this.refreshConnectionGroupSections()
+    }
+
+    getConnectionDraftPlaceholder (): string {
+        return this.translate.instant('COM / host:port / user@host:port')
+    }
+
+    async onConnectionProfileDropped (event: CdkDragDrop<PartialProfile<Profile>[]>, section: ConnectionGroupSection): Promise<void> {
+        if (event.previousContainer === event.container) {
+            if (event.previousIndex !== event.currentIndex) {
+                moveItemInArray(event.container.data, event.previousIndex, event.currentIndex)
+            }
+            return
+        }
+
+        const profile = event.item.data as PartialProfile<Profile>
+        profile.group = section.id === 'ungrouped' ? '' : section.id
+        transferArrayItem(
+            event.previousContainer.data,
+            event.container.data,
+            event.previousIndex,
+            event.currentIndex,
+        )
+        await this.profilesService.writeProfile(profile)
+        await this.config.save()
+        this.refreshConnectionGroupSections()
+    }
+
+    getConnectionTypeIcon (profile: PartialProfile<Profile>): string {
+        if (profile.type === 'ssh') {
+            return 'desktop'
+        }
+        if (profile.type === 'telnet') {
+            return 'network-wired'
+        }
+        return 'microchip'
+    }
+
+    getConnectionProfileGroups (): PartialProfileGroup<ProfileGroup>[] {
+        const groups: PartialProfileGroup<ProfileGroup>[] = []
+        const ungrouped = this.profileGroups.find(group => group.id === 'ungrouped')
+        if (ungrouped) {
+            groups.push({
+                id: 'ungrouped',
+                name: this.translate.instant('Ungrouped'),
+            })
+        }
+        for (const group of this.profileGroups) {
+            if (!group.editable || group.id === 'ungrouped') {
+                continue
+            }
+            groups.push({
+                id: group.id,
+                name: group.name,
+            })
+        }
+        return groups
+    }
+
+    async newConnectionProfileGroup (): Promise<void> {
         const modal = this.ngbModal.open(PromptModalComponent)
         modal.componentInstance.prompt = this.translate.instant('New group name')
         const result = await modal.result.catch(() => null)
@@ -182,28 +281,98 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
         const group: PartialProfileGroup<ProfileGroup> = { id: '', name: result.value.trim() }
         await this.profilesService.newProfileGroup(group)
         await this.config.save()
-        this.telnetGroupFilter = group.id
+        this.onConnectionGroupFilterChange(group.id)
     }
 
-    async saveTelnetProfile (profile: PartialProfile<Profile>): Promise<void> {
+    async duplicateConnectionProfile (profile: PartialProfile<Profile>): Promise<void> {
+        const copy: PartialProfile<Profile> = deepClone(profile)
+        delete copy.id
+        copy.name = this.translate.instant('{name} copy', profile)
+        copy.isBuiltin = false
+        copy.isTemplate = false
+        await this.profilesService.newProfile(copy)
+        await this.config.save()
+    }
+
+    getConnectionAddress (profile: PartialProfile<Profile>): string {
+        if (profile.id && this.connectionAddressCache.has(profile.id)) {
+            return this.connectionAddressCache.get(profile.id)!
+        }
+        if (profile.type === 'ssh') {
+            return this.formatSSHConnection(profile)
+        }
+        return this.formatConnectionAddress(profile)
+    }
+
+    getConnectionAddressPlaceholder (profile: PartialProfile<Profile>): string {
+        if (profile.type === 'serial') {
+            return this.translate.instant('COM port')
+        }
+        if (profile.type === 'ssh') {
+            return this.translate.instant('user@host or user@host:port')
+        }
+        return this.translate.instant('host or host:port')
+    }
+
+    onConnectionAddressInput (profile: PartialProfile<Profile>, value: string): void {
+        if (profile.id) {
+            this.connectionAddressCache.set(profile.id, value)
+        }
+    }
+
+    async saveConnectionAddress (profile: PartialProfile<Profile>): Promise<void> {
+        const raw = profile.id
+            ? (this.connectionAddressCache.get(profile.id) ?? this.getConnectionAddress(profile))
+            : this.getConnectionAddress(profile)
+        if (!raw.trim()) {
+            return
+        }
+
+        const detectedType = this.detectConnectionType(raw)
+        if (detectedType !== profile.type) {
+            const groupId = profile.group ? profile.group : 'ungrouped'
+            const cachedId = profile.id
+            await this.profilesService.deleteProfile(profile)
+            await this.config.save()
+            if (cachedId) {
+                this.connectionAddressCache.delete(cachedId)
+            }
+            await this.createConnectionProfileFromRaw(detectedType, raw, groupId)
+            await this.refreshProfiles()
+            this.refreshConnectionGroupSections()
+            return
+        }
+
+        this.applyConnectionRaw(profile, raw)
+        if (profile.id) {
+            this.connectionAddressCache.delete(profile.id)
+        }
+        await this.saveConnectionProfile(profile)
+        if (profile.type === 'ssh' && this.sshNeedsPassword(profile)) {
+            await this.promptAndSaveSSHPassword(profile)
+        }
+    }
+
+    async setConnectionProfileGroup (profile: PartialProfile<Profile>, group: string): Promise<void> {
+        profile.group = group === 'ungrouped' ? '' : group
+        await this.saveConnectionProfile(profile)
+        this.refreshConnectionGroupSections()
+    }
+
+    async saveConnectionProfile (profile: PartialProfile<Profile>): Promise<void> {
         profile.options ??= {}
         if (!profile.name) {
             const cfgProxy = this.profilesService.getConfigProxyForProfile(profile)
-            profile.name = this.profilesService.providerForProfile(profile)?.getSuggestedName(cfgProxy) ?? this.translate.instant('New Telnet connection')
+            profile.name = this.profilesService.providerForProfile(profile)?.getSuggestedName(cfgProxy) ?? profile.type
         }
-        if (profile.options.port !== null && profile.options.port !== undefined) {
+        if (profile.options.port !== null && profile.options.port !== undefined && profile.type !== 'serial') {
             profile.options.port = Number(profile.options.port)
         }
         await this.profilesService.writeProfile(profile)
         await this.config.save()
     }
 
-    async setTelnetProfileGroup (profile: PartialProfile<Profile>, group: string): Promise<void> {
-        profile.group = group === 'ungrouped' ? '' : group
-        await this.saveTelnetProfile(profile)
-    }
-
-    showTelnetProfileContextMenu (event: MouseEvent, profile: PartialProfile<Profile>): void {
+    showConnectionProfileContextMenu (event: MouseEvent, profile: PartialProfile<Profile>): void {
         event.preventDefault()
         event.stopPropagation()
 
@@ -211,7 +380,7 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
             {
                 label: this.translate.instant('Duplicate'),
                 click: () => {
-                    void this.duplicateTelnetProfile(profile)
+                    void this.duplicateConnectionProfile(profile)
                 },
             },
             {
@@ -231,32 +400,224 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
         this.platform.popupContextMenu(menu, event)
     }
 
-    getTelnetGroupColor (groupId?: string): string|null {
-        if (!groupId) {
+    getProfileGroupTextColor (profile: PartialProfile<Profile>): string|null {
+        if (!profile.group) {
             return null
         }
-        const group = this.profileGroups.find(x => x.id === groupId)
-        if (!group || group.id === 'ungrouped') {
-            return null
+        return this.profilesService.getProfileGroupColor(profile.group)
+    }
+
+    private formatConnectionAddress (profile: PartialProfile<Profile>): string {
+        profile.options ??= {}
+        if (profile.type === 'serial') {
+            return profile.options.port ?? ''
         }
-        return this.profilesService.getProfileGroupColor(group.id)
+        const host = profile.options.host ?? ''
+        const defaultPort = profile.type === 'ssh' ? 22 : 23
+        const port = profile.options.port ?? defaultPort
+        if (!host) {
+            return ''
+        }
+        if (port === defaultPort) {
+            return host
+        }
+        return `${host}:${port}`
     }
 
-    getTelnetProfileColor (profile: PartialProfile<Profile>): string|null {
-        return profile.color ?? this.getTelnetGroupColor(profile.group) ?? null
+    private formatSSHConnection (profile: PartialProfile<Profile>): string {
+        profile.options ??= {}
+        const host = profile.options.host ?? ''
+        if (!host) {
+            return ''
+        }
+        let s = host
+        const user = profile.options.user
+        if (user) {
+            s = `${user}@${s}`
+        }
+        const port = profile.options.port ?? 22
+        if (port !== 22) {
+            s = `${s}:${port}`
+        }
+        return s
     }
 
-    private isTelnetProfileVisible (profile: PartialProfile<Profile>): boolean {
-        if (this.telnetGroupFilter === 'ungrouped' && profile.group) {
+    private parseSSHConnection (query: string): { user?: string, host: string, port: number } {
+        let user: string|undefined = undefined
+        let host = query.trim()
+        let port = 22
+        if (!host) {
+            return { host: '', port: 22 }
+        }
+        if (host.includes('@')) {
+            const parts = host.split(/@/g)
+            host = parts[parts.length - 1]
+            user = parts.slice(0, parts.length - 1).join('@')
+        }
+        if (host.includes('[')) {
+            port = parseInt(host.split(']')[1].substring(1), 10)
+            host = host.split(']')[0].substring(1)
+        } else if (host.includes(':')) {
+            port = parseInt(host.split(/:/g).pop()!, 10)
+            host = host.substring(0, host.lastIndexOf(':'))
+        }
+        if (!port || Number.isNaN(port)) {
+            port = 22
+        }
+        return { user, host, port }
+    }
+
+    private applyConnectionRaw (profile: PartialProfile<Profile>, raw: string): void {
+        profile.options ??= {}
+        if (profile.type === 'serial') {
+            profile.options.port = raw.trim()
+        } else if (profile.type === 'ssh') {
+            const { user, host, port } = this.parseSSHConnection(raw)
+            profile.options.host = host
+            profile.options.port = port
+            if (user) {
+                profile.options.user = user
+            }
+        } else {
+            const { host, port } = this.parseHostPort(raw, 23)
+            profile.options.host = host
+            profile.options.port = port
+        }
+    }
+
+    private async createConnectionProfileFromRaw (type: string, raw: string, groupId: string): Promise<void> {
+        const profiles = await this.profilesService.getProfiles()
+        let base = profiles.find(x => x.type === type && x.isTemplate)
+        if (!base) {
+            base = profiles.find(x => x.type === type && x.isBuiltin)
+        }
+        if (!base) {
+            this.notifications.error(this.translate.instant('No template found for {type}', { type }))
+            return
+        }
+
+        const profile: PartialProfile<Profile> = deepClone(base)
+        delete profile.id
+        profile.isBuiltin = false
+        profile.isTemplate = false
+        profile.group = groupId === 'ungrouped' ? '' : groupId
+        profile.options ??= {}
+        this.applyConnectionRaw(profile, raw)
+
+        await this.profilesService.newProfile(profile)
+        const cfgProxy = this.profilesService.getConfigProxyForProfile(profile)
+        profile.name = this.profilesService.providerForProfile(profile)?.getSuggestedName(cfgProxy) ?? profile.type
+        if (profile.options.port !== null && profile.options.port !== undefined && profile.type !== 'serial') {
+            profile.options.port = Number(profile.options.port)
+        }
+        await this.profilesService.writeProfile(profile)
+
+        if (profile.type === 'ssh' && this.sshNeedsPassword(profile)) {
+            await this.promptAndSaveSSHPassword(profile)
+        }
+        await this.config.save()
+    }
+
+    private detectConnectionType (raw: string): 'ssh' | 'telnet' | 'serial' {
+        const value = raw.trim()
+        if (value.includes('@')) {
+            return 'ssh'
+        }
+        if (/^COM\d+$/i.test(value) || /^\\\\\.\\COM\d+$/i.test(value) || /^\/dev\/(tty|cu)/i.test(value)) {
+            return 'serial'
+        }
+        return 'telnet'
+    }
+
+    private sshNeedsPassword (profile: PartialProfile<Profile>): boolean {
+        if (profile.type !== 'ssh') {
             return false
         }
-        if (this.telnetGroupFilter !== 'all' && this.telnetGroupFilter !== 'ungrouped' && profile.group !== this.telnetGroupFilter) {
+        profile.options ??= {}
+        const auth = profile.options.auth
+        if (auth === 'publicKey' || auth === 'agent' || auth === 'keyboard-interactive') {
+            return false
+        }
+        if (profile.options.password) {
+            return false
+        }
+        if ((profile.options.privateKeys?.length ?? 0) > 0) {
+            return false
+        }
+        return Boolean(profile.options.host)
+    }
+
+    private async promptAndSaveSSHPassword (profile: PartialProfile<Profile>): Promise<boolean> {
+        profile.options ??= {}
+        const modal = this.ngbModal.open(PromptModalComponent)
+        modal.componentInstance.password = true
+        modal.componentInstance.prompt = this.translate.instant(
+            'Password for {user}@{host}',
+            {
+                user: profile.options.user ?? 'root',
+                host: profile.options.host ?? '',
+            },
+        )
+        const result = await modal.result.catch(() => null)
+        if (!result?.value) {
+            return false
+        }
+        profile.options.password = result.value
+        profile.options.auth = 'password'
+        await this.profilesService.writeProfile(profile)
+        await this.config.save()
+        return true
+    }
+
+    private async maybeClearUngroupedConnections (): Promise<void> {
+        if (localStorage.getItem(ProfilesSettingsTabComponent.CLEAR_UNGROUPED_KEY)) {
+            return
+        }
+        const ungrouped = this.getBaseConnectionProfiles().filter(profile => !profile.group)
+        for (const profile of ungrouped) {
+            await this.profilesService.deleteProfile(profile)
+        }
+        if (ungrouped.length > 0) {
+            await this.config.save()
+            await this.refreshProfiles()
+        }
+        localStorage.setItem(ProfilesSettingsTabComponent.CLEAR_UNGROUPED_KEY, '1')
+    }
+
+    private getBaseConnectionProfiles (): PartialProfile<Profile>[] {
+        return this.customProfiles.filter(x => ['ssh', 'telnet', 'serial'].includes(x.type) && !x.isTemplate)
+    }
+
+    private parseHostPort (query: string, defaultPort: number): { host: string, port: number } {
+        let host = query.trim()
+        let port = defaultPort
+        if (!host) {
+            return { host: '', port: defaultPort }
+        }
+        if (host.includes('[')) {
+            port = parseInt(host.split(']')[1].substring(1), 10)
+            host = host.split(']')[0].substring(1)
+        } else if (host.includes(':')) {
+            port = parseInt(host.split(/:/g).pop()!, 10)
+            host = host.substring(0, host.lastIndexOf(':'))
+        }
+        if (!port || Number.isNaN(port)) {
+            port = defaultPort
+        }
+        return { host, port }
+    }
+
+    private isConnectionProfileVisible (profile: PartialProfile<Profile>): boolean {
+        if (this.connectionGroupFilter === 'ungrouped' && profile.group) {
+            return false
+        }
+        if (this.connectionGroupFilter !== 'all' && this.connectionGroupFilter !== 'ungrouped' && profile.group !== this.connectionGroupFilter) {
             return false
         }
         return this.isProfileVisible(profile)
     }
 
-    private getTelnetSortKey (profile: PartialProfile<Profile>): string {
+    private getConnectionSortKey (profile: PartialProfile<Profile>): string {
         const groupName = profile.group ? this.profilesService.resolveProfileGroupName(profile.group) : ''
         return `${profile.group ? '1' : '0'}:${groupName}:${profile.name}`
     }
@@ -347,6 +708,7 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
         )).response === 0) {
             await this.profilesService.deleteProfile(profile)
             await this.config.save()
+            this.refreshConnectionGroupSections()
         }
     }
 

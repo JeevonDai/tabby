@@ -38,11 +38,9 @@ export class TelnetTabComponent extends ConnectableTerminalTabComponent<TelnetPr
 
     protected onSessionDestroyed (): void {
         if (this.frontend) {
-            // Session was closed abruptly
-            this.write('\r\n' + colors.black.bgWhite(' TELNET ') + ` ${this.session?.profile.options.host}: session closed\r\n`)
-
-            super.onSessionDestroyed()
+            void this.write('\r\n' + colors.black.bgWhite(' TELNET ') + ` ${this.session?.profile.options.host}: session closed\r\n`)
         }
+        super.onSessionDestroyed()
     }
 
     async initializeSession (): Promise<void> {
@@ -55,8 +53,10 @@ export class TelnetTabComponent extends ConnectableTerminalTabComponent<TelnetPr
             this.startSpinner(this.translate.instant(_('Connecting')))
 
             this.attachSessionHandler(session.serviceMessage$, msg => {
-                this.write(`\r${colors.black.bgWhite(' Telnet ')} ${msg}\r\n`)
-                session.resize(this.size.columns, this.size.rows)
+                void this.write(`\r${colors.black.bgWhite(' Telnet ')} ${msg}\r\n`)
+                if (this.size) {
+                    session.resize(this.size.columns, this.size.rows)
+                }
             })
 
             try {
@@ -64,11 +64,11 @@ export class TelnetTabComponent extends ConnectableTerminalTabComponent<TelnetPr
                 this.stopSpinner()
             } catch (e) {
                 this.stopSpinner()
-                this.write(colors.black.bgRed(' X ') + ' ' + colors.red(e.message) + '\r\n')
+                void this.write(colors.black.bgRed(' X ') + ' ' + colors.red(e.message) + '\r\n')
                 return
             }
         } catch (e) {
-            this.write(colors.black.bgRed(' X ') + ' ' + colors.red(e.message) + '\r\n')
+            void this.write(colors.black.bgRed(' X ') + ' ' + colors.red(e.message) + '\r\n')
         }
     }
 

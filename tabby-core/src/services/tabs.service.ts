@@ -39,6 +39,9 @@ export class TabsService {
         tab.hostView = componentRef.hostView
         tab.destroyed$.subscribe(() => componentRef.destroy())
         Object.assign(tab, params.inputs ?? {})
+        if (params.inputs && 'titleColor' in params.inputs) {
+            tab.titleColor = params.inputs.titleColor
+        }
         return tab
     }
 
