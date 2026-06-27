@@ -38,10 +38,16 @@ profile-icon {
     .connection-drag-cell {
         width: 1.25rem;
         padding-right: 0;
-        cursor: grab;
 
-        .cdk-drag-handle {
+        .connection-drag-handle {
             cursor: grab;
+            color: var(--theme-fg-less);
+            padding-left: 0;
+            padding-right: 0;
+
+            &:active {
+                cursor: grabbing;
+            }
         }
     }
 }
