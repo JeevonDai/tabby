@@ -6,6 +6,7 @@ import { Injector } from '@angular/core'
 import { LogService } from 'tabby-core'
 import { BaseSession, ConnectableTerminalProfile, InputProcessingOptions, InputProcessor, LoginScriptsOptions, SessionMiddleware, StreamProcessingOptions, TerminalStreamProcessor } from 'tabby-terminal'
 import { Subject, Observable } from 'rxjs'
+import { parseTelnetAddress, TelnetAddress } from './address'
 
 
 export interface TelnetProfile extends ConnectableTerminalProfile {
@@ -100,8 +101,12 @@ export class TelnetSession extends BaseSession {
     }
 
     async start (): Promise<void> {
+        const address = this.parseAddress()
+
+        this.profile.options.host = address.host
+        this.profile.options.port = address.port
         this.socket = new Socket()
-        this.emitServiceMessage(`Connecting to ${this.profile.options.host}`)
+        this.emitServiceMessage(`Connecting to ${address.host}:${address.port}`)
 
         return new Promise((resolve, reject) => {
             this.socket.on('error', err => {
@@ -114,7 +119,7 @@ export class TelnetSession extends BaseSession {
                 this.destroy()
             })
             this.socket.on('data', data => this.onData(data))
-            this.socket.connect(this.profile.options.port ?? 23, this.profile.options.host, () => {
+            this.socket.connect(address.port, address.host, () => {
                 this.emitServiceMessage('Connected')
                 this.open = true
                 setTimeout(() => this.streamProcessor.start())
@@ -122,6 +127,15 @@ export class TelnetSession extends BaseSession {
                 resolve()
             })
         })
+    }
+
+    private parseAddress (): TelnetAddress {
+        try {
+            return parseTelnetAddress(this.profile.options.host, this.profile.options.port)
+        } catch (error) {
+            this.emitServiceMessage(colors.bgRed.black(' X ') + ` ${error instanceof Error ? error.message : String(error)}`)
+            throw error
+        }
     }
 
     requestOption (cmd: TelnetCommands, option: TelnetOptions): void {

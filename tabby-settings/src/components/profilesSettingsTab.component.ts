@@ -680,19 +680,34 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
     }
 
     private parseHostPort (query: string, defaultPort: number): { host: string, port: number } {
-        let host = query.trim()
+        let host = query.trim().replace(/^(?:telnet|tcp):(?:\/\/)?/i, '')
         let port = defaultPort
         if (!host) {
             return { host: '', port: defaultPort }
         }
         if (host.includes('[')) {
-            port = parseInt(host.split(']')[1].substring(1), 10)
-            host = host.split(']')[0].substring(1)
-        } else if (host.includes(':')) {
-            port = parseInt(host.split(/:/g).pop()!, 10)
-            host = host.substring(0, host.lastIndexOf(':'))
+            const closingBracket = host.indexOf(']')
+            const suffix = closingBracket >= 0 ? host.slice(closingBracket + 1).trim() : ''
+            if (/^:\s*\d+$/.test(suffix)) {
+                port = parseInt(suffix.slice(1).trim(), 10)
+            }
+            host = closingBracket >= 0 ? host.slice(1, closingBracket).trim() : host
+        } else {
+            const whitespacePort = /^(\S+)\s+(\d+)$/.exec(host)
+            if (whitespacePort) {
+                const [, parsedHost, parsedPort] = whitespacePort
+                host = parsedHost
+                port = parseInt(parsedPort, 10)
+            } else if ((host.match(/:/g) ?? []).length === 1) {
+                const hostPort = /^(.+):\s*(\d+)$/.exec(host)
+                if (hostPort) {
+                    const [, parsedHost, parsedPort] = hostPort
+                    host = parsedHost.trim()
+                    port = parseInt(parsedPort, 10)
+                }
+            }
         }
-        if (!port || Number.isNaN(port)) {
+        if (!Number.isInteger(port) || port < 1 || port > 65535) {
             port = defaultPort
         }
         return { host, port }

@@ -3,6 +3,7 @@ import { NewTabParameters, PartialProfile, TranslateService, QuickConnectProfile
 import { TelnetProfileSettingsComponent } from './components/telnetProfileSettings.component'
 import { TelnetTabComponent } from './components/telnetTab.component'
 import { TelnetProfile } from './session'
+import { formatTelnetAddress, parseTelnetAddress } from './address'
 
 @Injectable({ providedIn: 'root' })
 export class TelnetProfilesService extends QuickConnectProfileProvider<TelnetProfile> {
@@ -81,15 +82,7 @@ export class TelnetProfilesService extends QuickConnectProfileProvider<TelnetPro
     }
 
     quickConnect (query: string): PartialProfile<TelnetProfile> {
-        let host = query
-        let port = 23
-        if (host.includes('[')) {
-            port = parseInt(host.split(']')[1].substring(1))
-            host = host.split(']')[0].substring(1)
-        } else if (host.includes(':')) {
-            port = parseInt(host.split(/:/g)[1])
-            host = host.split(':')[0]
-        }
+        const { host, port } = parseTelnetAddress(query)
 
         return {
             name: query,
@@ -104,10 +97,6 @@ export class TelnetProfilesService extends QuickConnectProfileProvider<TelnetPro
     }
 
     intoQuickConnectString (profile: TelnetProfile): string | null {
-        let s = profile.options.host
-        if (profile.options.port !== 23) {
-            s = `${s}:${profile.options.port}`
-        }
-        return s
+        return formatTelnetAddress(profile.options.host, profile.options.port)
     }
 }
