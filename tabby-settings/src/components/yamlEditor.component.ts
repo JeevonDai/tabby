@@ -114,6 +114,9 @@ export class YamlEditorComponent implements AfterViewInit, OnChanges, OnDestroy 
     private createState (doc: string): EditorState {
         const lightTheme = this.config.store.appearance?.colorSchemeMode === 'light'
         const fontSize = Math.min(Math.max(this.config.store.terminal?.fontSize ?? 13, 12), 15)
+        const selectionBackground = lightTheme ? 'rgba(13, 110, 253, 0.30)' : 'rgba(77, 163, 255, 0.42)'
+        const selectionMatchBackground = lightTheme ? 'rgba(13, 110, 253, 0.14)' : 'rgba(77, 163, 255, 0.20)'
+        const selectionMatchOutline = lightTheme ? 'rgba(13, 110, 253, 0.32)' : 'rgba(77, 163, 255, 0.42)'
 
         return EditorState.create({
             doc,
@@ -201,7 +204,11 @@ export class YamlEditorComponent implements AfterViewInit, OnChanges, OnDestroy 
                         borderLeftColor: 'var(--bs-body-color)',
                     },
                     '&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection': {
-                        backgroundColor: 'var(--theme-bg-more-2) !important',
+                        backgroundColor: `${selectionBackground} !important`,
+                    },
+                    '.cm-selectionMatch': {
+                        backgroundColor: `${selectionMatchBackground} !important`,
+                        outline: `1px solid ${selectionMatchOutline}`,
                     },
                     '.cm-activeLine': {
                         backgroundColor: 'var(--theme-bg-more)',
