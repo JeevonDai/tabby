@@ -170,6 +170,34 @@ export class YamlEditorSearchPanel implements Panel {
             search: this.searchField.value,
             replace: this.replaceField?.value ?? this.query.replace,
         })
+        this.selectCurrentMatch()
+    }
+
+    private selectCurrentMatch (): void {
+        if (!this.query.valid || !this.query.search) {
+            return
+        }
+
+        const anchor = this.view.state.selection.main.from
+        const cursor = this.query.getCursor(this.view.state)
+        let firstMatch: { from: number, to: number } | null = null
+        let match: { from: number, to: number } | null = null
+
+        for (let next = cursor.next(); !next.done; next = cursor.next()) {
+            firstMatch ??= next.value
+            if (next.value.to >= anchor) {
+                match = next.value
+                break
+            }
+        }
+
+        match ??= firstMatch
+        if (match) {
+            this.view.dispatch({
+                selection: { anchor: match.from, head: match.to },
+                scrollIntoView: true,
+            })
+        }
     }
 
     private setQuery (changes: Partial<Pick<SearchQuery, 'search' | 'replace' | 'caseSensitive' | 'regexp' | 'wholeWord'>>): void {
