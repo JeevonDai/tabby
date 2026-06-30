@@ -1,9 +1,17 @@
 .yaml-editor-toolbar
     button.btn.btn-sm.btn-secondary(
         type='button',
-        (click)='openSearch()',
+        (click)='openSearch(false)',
         [title]='"Search"|translate',
     )
         i.fas.fa-search.me-1
         span(translate) Search
+    button.btn.btn-sm.btn-secondary.ms-2(
+        *ngIf='!readonly',
+        type='button',
+        (click)='openSearch(true)',
+        [title]='"Replace"|translate',
+    )
+        i.fas.fa-exchange-alt.me-1
+        span(translate) Replace
 .yaml-editor-body(#host)

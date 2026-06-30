@@ -10,16 +10,37 @@ import {
     SimpleChanges,
     ViewChild,
 } from '@angular/core'
-import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
+import { closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete'
+import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands'
 import { yaml } from '@codemirror/lang-yaml'
-import { search, searchKeymap, openSearchPanel } from '@codemirror/search'
+import { bracketMatching, foldGutter, foldKeymap, indentOnInput, indentUnit } from '@codemirror/language'
+import { highlightSelectionMatches, openSearchPanel, search, searchKeymap } from '@codemirror/search'
 import { Compartment, EditorState } from '@codemirror/state'
-import { EditorView, keymap, lineNumbers } from '@codemirror/view'
+import {
+    EditorView,
+    drawSelection,
+    dropCursor,
+    highlightActiveLine,
+    highlightActiveLineGutter,
+    highlightSpecialChars,
+    keymap,
+    lineNumbers,
+    rectangularSelection,
+} from '@codemirror/view'
 import { marker as _ } from '@biesbjerg/ngx-translate-extract-marker'
-import { ConfigService, getCSSFontFamily } from 'tabby-core'
+import { ConfigService, getCSSFontFamily, TranslateService } from 'tabby-core'
 import { yamlEditorSyntaxHighlighting } from './yamlEditorHighlight'
+import { YamlEditorSearchLabels, YamlEditorSearchPanel } from './yamlEditorSearchPanel'
 
 _('Search')
+_('Replace')
+_('Replace all')
+_('Previous match')
+_('Next match')
+_('Match case')
+_('Regular expression')
+_('Whole word')
+_('Close')
 
 /** @hidden */
 @Component({
@@ -32,13 +53,14 @@ export class YamlEditorComponent implements AfterViewInit, OnChanges, OnDestroy 
     @Input() readonly = false
     @Output() valueChange = new EventEmitter<string>()
 
-    @ViewChild('host', { static: true }) host: ElementRef<HTMLDivElement>
+    @ViewChild('host', { 'static': true }) host: ElementRef<HTMLDivElement>
 
     private view: EditorView | null = null
     private readonly editableCompartment = new Compartment()
 
     constructor (
         private config: ConfigService,
+        private translate: TranslateService,
     ) { }
 
     ngAfterViewInit (): void {
@@ -52,7 +74,7 @@ export class YamlEditorComponent implements AfterViewInit, OnChanges, OnDestroy 
         if (!this.view) {
             return
         }
-        if (changes.value) {
+        if ('value' in changes) {
             const nextValue = changes.value.currentValue ?? ''
             const currentValue = this.view.state.doc.toString()
             if (nextValue !== currentValue) {
@@ -61,9 +83,12 @@ export class YamlEditorComponent implements AfterViewInit, OnChanges, OnDestroy 
                 })
             }
         }
-        if (changes.readonly) {
+        if ('readonly' in changes) {
             this.view.dispatch({
-                effects: this.editableCompartment.reconfigure(EditorView.editable.of(!this.readonly)),
+                effects: this.editableCompartment.reconfigure([
+                    EditorView.editable.of(!this.readonly),
+                    EditorState.readOnly.of(this.readonly),
+                ]),
             })
         }
     }
@@ -73,12 +98,17 @@ export class YamlEditorComponent implements AfterViewInit, OnChanges, OnDestroy 
         this.view = null
     }
 
-    openSearch (): void {
+    openSearch (replace = false): void {
         if (!this.view) {
             return
         }
         openSearchPanel(this.view)
-        this.view.focus()
+        const selector = replace ? '.cm-yaml-replace-field' : '[main-field=true]'
+        requestAnimationFrame(() => {
+            const field = this.host.nativeElement.querySelector<HTMLInputElement>(selector)
+            field?.focus()
+            field?.select()
+        })
     }
 
     private createState (doc: string): EditorState {
@@ -89,17 +119,59 @@ export class YamlEditorComponent implements AfterViewInit, OnChanges, OnDestroy 
             doc,
             extensions: [
                 lineNumbers(),
+                foldGutter(),
+                highlightSpecialChars(),
+                drawSelection(),
+                dropCursor(),
+                rectangularSelection(),
+                highlightActiveLine(),
+                highlightActiveLineGutter(),
+                highlightSelectionMatches(),
                 yaml(),
                 history(),
-                search({ top: true }),
+                indentOnInput(),
+                bracketMatching(),
+                closeBrackets(),
+                indentUnit.of('  '),
+                EditorState.tabSize.of(2),
+                EditorState.allowMultipleSelections.of(true),
+                search({
+                    top: true,
+                    createPanel: view => new YamlEditorSearchPanel(view, this.getSearchLabels()),
+                }),
                 yamlEditorSyntaxHighlighting(lightTheme),
                 keymap.of([
+                    ...closeBracketsKeymap,
                     ...defaultKeymap,
                     ...historyKeymap,
                     ...searchKeymap,
+                    ...foldKeymap,
+                    indentWithTab,
+                    {
+                        key: 'Mod-h',
+                        run: () => {
+                            this.openSearch(true)
+                            return true
+                        },
+                    },
+                    {
+                        key: 'Mod-Alt-f',
+                        run: () => {
+                            this.openSearch(true)
+                            return true
+                        },
+                    },
                 ]),
-                this.editableCompartment.of(EditorView.editable.of(!this.readonly)),
+                this.editableCompartment.of([
+                    EditorView.editable.of(!this.readonly),
+                    EditorState.readOnly.of(this.readonly),
+                ]),
                 EditorView.lineWrapping,
+                EditorView.contentAttributes.of({
+                    autocapitalize: 'off',
+                    autocomplete: 'off',
+                    spellcheck: 'false',
+                }),
                 EditorView.updateListener.of(update => {
                     if (update.docChanged) {
                         this.valueChange.emit(update.state.doc.toString())
@@ -155,38 +227,30 @@ export class YamlEditorComponent implements AfterViewInit, OnChanges, OnDestroy 
                         border: '1px solid var(--bs-border-color)',
                         borderRadius: 'var(--bs-border-radius)',
                     },
-                    '.cm-search': {
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        alignItems: 'center',
-                        gap: '4px 6px',
-                        padding: '4px 6px',
-                        fontSize: '12px',
-                        lineHeight: '1.2',
+                    '.cm-searchMatch': {
+                        backgroundColor: 'rgba(255, 193, 7, 0.32)',
+                        outline: '1px solid rgba(255, 193, 7, 0.55)',
                     },
-                    '.cm-search label': {
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        margin: '0',
-                        lineHeight: '1.2',
-                    },
-                    '.cm-search input[type=checkbox]': {
-                        margin: '0',
-                        flexShrink: '0',
-                    },
-                    '.cm-search .cm-button, .cm-search button[name=close]': {
-                        backgroundColor: 'var(--bs-secondary-bg, var(--theme-bg-more-2))',
-                        color: 'var(--bs-secondary-color, var(--bs-body-color))',
-                        border: '1px solid var(--bs-border-color)',
-                        borderRadius: 'var(--bs-border-radius)',
-                        padding: '2px 8px',
-                        fontSize: '12px',
-                        lineHeight: '1.2',
-                        cursor: 'pointer',
+                    '.cm-searchMatch.cm-searchMatch-selected': {
+                        backgroundColor: 'rgba(255, 152, 0, 0.55)',
+                        outline: '1px solid rgba(255, 152, 0, 0.9)',
                     },
                 }),
             ],
         })
+    }
+
+    private getSearchLabels (): YamlEditorSearchLabels {
+        return {
+            search: this.translate.instant('Search'),
+            replace: this.translate.instant('Replace'),
+            replaceAll: this.translate.instant('Replace all'),
+            previousMatch: this.translate.instant('Previous match'),
+            nextMatch: this.translate.instant('Next match'),
+            matchCase: this.translate.instant('Match case'),
+            regularExpression: this.translate.instant('Regular expression'),
+            wholeWord: this.translate.instant('Whole word'),
+            close: this.translate.instant('Close'),
+        }
     }
 }
