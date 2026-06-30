@@ -213,6 +213,11 @@ export class YamlEditorComponent implements AfterViewInit, OnChanges, OnDestroy 
                     '.cm-activeLine': {
                         backgroundColor: 'var(--theme-bg-more)',
                     },
+                    '&:has(.cm-selectionBackground) .cm-activeLine': {
+                        // The selection layer is behind the content. An opaque active-line
+                        // background would otherwise hide the selection on its head line.
+                        backgroundColor: 'transparent',
+                    },
                     '.cm-gutters': {
                         backgroundColor: 'var(--theme-bg-more)',
                         color: 'var(--bs-secondary-color)',
