@@ -29,6 +29,7 @@ _('Detailed edit')
 _('COM')
 _('COM / host:port / user@host:port')
 _('Password for {user}@{host}')
+_('Invalid connection address: {message}')
 
 interface CollapsableProfileGroup extends ProfileGroup {
     collapsed: boolean
@@ -207,6 +208,9 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
     }
 
     async launchProfileAsync (profile: PartialProfile<Profile>): Promise<void> {
+        if (profile.id && this.connectionAddressCache.has(profile.id) && !await this.saveConnectionAddress(profile)) {
+            return
+        }
         if (profile.type === 'ssh' && this.sshNeedsPassword(profile)) {
             if (!await this.promptAndSaveSSHPassword(profile)) {
                 return
@@ -299,7 +303,9 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
         if (!raw) {
             return
         }
-        await this.createConnectionProfileFromRaw(this.detectConnectionType(raw), raw, groupId)
+        if (!await this.createConnectionProfileFromRaw(this.detectConnectionType(raw), raw, groupId)) {
+            return
+        }
         this.connectionDrafts[groupId] = ''
         await this.refreshProfiles()
         this.refreshConnectionGroupSections()
@@ -411,12 +417,12 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
         }
     }
 
-    async saveConnectionAddress (profile: PartialProfile<Profile>): Promise<void> {
+    async saveConnectionAddress (profile: PartialProfile<Profile>): Promise<boolean> {
         const raw = profile.id
             ? (this.connectionAddressCache.get(profile.id) ?? this.getConnectionAddress(profile))
             : this.getConnectionAddress(profile)
         if (!raw.trim()) {
-            return
+            return false
         }
 
         const detectedType = this.detectConnectionType(raw)
@@ -431,10 +437,12 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
             await this.createConnectionProfileFromRaw(detectedType, raw, groupId)
             await this.refreshProfiles()
             this.refreshConnectionGroupSections()
-            return
+            return false
         }
 
-        this.applyConnectionRaw(profile, raw)
+        if (!this.tryApplyConnectionRaw(profile, raw)) {
+            return false
+        }
         if (profile.id) {
             this.connectionAddressCache.delete(profile.id)
         }
@@ -442,6 +450,7 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
         if (profile.type === 'ssh' && this.sshNeedsPassword(profile)) {
             await this.promptAndSaveSSHPassword(profile)
         }
+        return true
     }
 
     async setConnectionProfileGroup (profile: PartialProfile<Profile>, group: string): Promise<void> {
@@ -503,16 +512,12 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
         if (profile.type === 'serial') {
             return profile.options.port ?? ''
         }
-        const host = profile.options.host ?? ''
-        const defaultPort = profile.type === 'ssh' ? 22 : 23
-        const port = profile.options.port ?? defaultPort
-        if (!host) {
-            return ''
+        const provider = this.profilesService.providerForProfile(profile)
+        if (provider instanceof QuickConnectProfileProvider) {
+            const fullProfile = this.profilesService.getConfigProxyForProfile(profile)
+            return provider.intoQuickConnectString(fullProfile) ?? ''
         }
-        if (port === defaultPort) {
-            return host
-        }
-        return `${host}:${port}`
+        return ''
     }
 
     private formatSSHConnection (profile: PartialProfile<Profile>): string {
@@ -570,13 +575,32 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
                 profile.options.user = user
             }
         } else {
-            const { host, port } = this.parseHostPort(raw, 23)
-            profile.options.host = host
-            profile.options.port = port
+            const provider = this.profilesService.providerForProfile(profile)
+            if (!(provider instanceof QuickConnectProfileProvider)) {
+                throw new Error(`Connection provider for ${profile.type} cannot parse addresses`)
+            }
+            const parsed = provider.quickConnect(raw)
+            if (!parsed?.options?.host || parsed.options.port === null || parsed.options.port === undefined) {
+                throw new Error(`Connection provider for ${profile.type} returned an invalid address`)
+            }
+            profile.options.host = parsed.options.host
+            profile.options.port = parsed.options.port
         }
     }
 
-    private async createConnectionProfileFromRaw (type: string, raw: string, groupId: string): Promise<void> {
+    private tryApplyConnectionRaw (profile: PartialProfile<Profile>, raw: string): boolean {
+        try {
+            this.applyConnectionRaw(profile, raw)
+            return true
+        } catch (error) {
+            this.notifications.error(this.translate.instant('Invalid connection address: {message}', {
+                message: error instanceof Error ? error.message : String(error),
+            }))
+            return false
+        }
+    }
+
+    private async createConnectionProfileFromRaw (type: string, raw: string, groupId: string): Promise<boolean> {
         const profiles = await this.profilesService.getProfiles()
         let base = profiles.find(x => x.type === type && x.isTemplate)
         if (!base) {
@@ -584,7 +608,7 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
         }
         if (!base) {
             this.notifications.error(this.translate.instant('No template found for {type}', { type }))
-            return
+            return false
         }
 
         const profile: PartialProfile<Profile> = deepClone(base)
@@ -593,7 +617,9 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
         profile.isTemplate = false
         profile.group = groupId === 'ungrouped' ? '' : groupId
         profile.options ??= {}
-        this.applyConnectionRaw(profile, raw)
+        if (!this.tryApplyConnectionRaw(profile, raw)) {
+            return false
+        }
 
         await this.profilesService.newProfile(profile)
         const cfgProxy = this.profilesService.getConfigProxyForProfile(profile)
@@ -607,6 +633,7 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
             await this.promptAndSaveSSHPassword(profile)
         }
         await this.config.save()
+        return true
     }
 
     private detectConnectionType (raw: string): 'ssh' | 'telnet' | 'serial' {
@@ -677,40 +704,6 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
 
     private getBaseConnectionProfiles (): PartialProfile<Profile>[] {
         return this.customProfiles.filter(x => ['ssh', 'telnet', 'serial'].includes(x.type) && !x.isTemplate)
-    }
-
-    private parseHostPort (query: string, defaultPort: number): { host: string, port: number } {
-        let host = query.trim().replace(/^(?:telnet|tcp):(?:\/\/)?/i, '')
-        let port = defaultPort
-        if (!host) {
-            return { host: '', port: defaultPort }
-        }
-        if (host.includes('[')) {
-            const closingBracket = host.indexOf(']')
-            const suffix = closingBracket >= 0 ? host.slice(closingBracket + 1).trim() : ''
-            if (/^:\s*\d+$/.test(suffix)) {
-                port = parseInt(suffix.slice(1).trim(), 10)
-            }
-            host = closingBracket >= 0 ? host.slice(1, closingBracket).trim() : host
-        } else {
-            const whitespacePort = /^(\S+)\s+(\d+)$/.exec(host)
-            if (whitespacePort) {
-                const [, parsedHost, parsedPort] = whitespacePort
-                host = parsedHost
-                port = parseInt(parsedPort, 10)
-            } else if ((host.match(/:/g) ?? []).length === 1) {
-                const hostPort = /^(.+):\s*(\d+)$/.exec(host)
-                if (hostPort) {
-                    const [, parsedHost, parsedPort] = hostPort
-                    host = parsedHost.trim()
-                    port = parseInt(parsedPort, 10)
-                }
-            }
-        }
-        if (!Number.isInteger(port) || port < 1 || port > 65535) {
-            port = defaultPort
-        }
-        return { host, port }
     }
 
     private isConnectionProfileVisible (profile: PartialProfile<Profile>): boolean {

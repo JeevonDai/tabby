@@ -67,5 +67,5 @@ export function parseTelnetAddress (
 export function formatTelnetAddress (host: string, port: number|null|undefined): string {
     const normalizedHost = host.includes(':') ? `[${host}]` : host
     const normalizedPort = port ?? DEFAULT_TELNET_PORT
-    return normalizedPort === DEFAULT_TELNET_PORT ? normalizedHost : `${normalizedHost}:${normalizedPort}`
+    return `${normalizedHost}:${normalizedPort}`
 }
