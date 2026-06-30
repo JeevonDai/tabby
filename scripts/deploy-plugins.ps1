@@ -200,7 +200,9 @@ if ($ValidPlugins.Count -eq 0) {
 if (-not $Plugin -or ($Plugin.Trim() -eq 'all')) {
     $PluginList = $ValidPlugins
 } else {
-    $PluginList = $Plugin -split ',' | ForEach-Object { Normalize-PluginName $_ } | Where-Object { $_ }
+    $PluginList = $Plugin -split '[,\s]+' |
+    ForEach-Object { Normalize-PluginName $_ } |
+    Where-Object { $_ }
 }
 
 # 验证插件名称
