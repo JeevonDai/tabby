@@ -1,6 +1,8 @@
 hotkeys:
   toggle-fullscreen:
     - 'F11'
+  toggle-color-scheme:
+    - 'Ctrl-D'
   close-tab:
     - 'Ctrl-Shift-W'
   reopen-tab:

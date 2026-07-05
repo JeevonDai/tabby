@@ -20,6 +20,10 @@ export class AppHotkeyProvider extends HotkeyProvider {
             name: this.translate.instant('Toggle fullscreen mode'),
         },
         {
+            id: 'toggle-color-scheme',
+            name: this.translate.instant('Toggle light/dark color scheme'),
+        },
+        {
             id: 'rename-tab',
             name: this.translate.instant('Rename tab'),
         },

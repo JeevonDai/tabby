@@ -359,6 +359,10 @@ export class BaseTerminalTabComponent<P extends BaseTerminalProfile> extends Bas
             this.configure()
         })
 
+        this.subscribeUntilDestroyed(this.themes.themeChanged$, () => {
+            this.configure()
+        })
+
         // Check if the the WebGL renderer is compatible with xterm.js:
         // - https://github.com/Eugeny/tabby/issues/8884
         // - https://github.com/microsoft/vscode/issues/190195

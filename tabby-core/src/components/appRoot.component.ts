@@ -142,6 +142,11 @@ export class AppRootComponent {
             if (hotkey === 'toggle-fullscreen') {
                 hostWindow.toggleFullscreen()
             }
+            if (hotkey === 'toggle-color-scheme') {
+                this.config.store.appearance.colorSchemeMode =
+                    this.config.store.appearance.colorSchemeMode === 'light' ? 'dark' : 'light'
+                void this.config.save()
+            }
         })
 
         this.hostWindow.windowCloseRequest$.subscribe(async () => {
