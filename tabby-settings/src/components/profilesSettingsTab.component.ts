@@ -67,7 +67,7 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
     rootGroups: PartialProfileGroup<CollapsableProfileGroup>[] = []
 
     filter = ''
-    connectionGroupFilter = 'all'
+    selectedConnectionGroupIds = new Set<string>()
     activeProfilesSubTab = 'profiles'
     connectionGroupSections: ConnectionGroupSection[] = []
     connectionProfileGroups: PartialProfileGroup<ProfileGroup>[] = []
@@ -78,6 +78,8 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
         : 'localhost:0.0'
     private descriptionCache = new Map<string, string|null>()
     private connectionAddressCache = new Map<string, string>()
+
+    private connectionGroupSelectionInitialized = false
 
     constructor (
         public config: ConfigService,
@@ -148,12 +150,43 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
         this.refreshConnectionGroupSections()
     }
 
-    onConnectionGroupFilterChange (value: string): void {
-        this.connectionGroupFilter = value
-        if (this.connectionGroupFilter !== 'all' && !this.connectionDrafts[this.connectionGroupFilter]) {
-            this.connectionDrafts[this.connectionGroupFilter] = ''
-        }
+    toggleAllConnectionGroups (selected: boolean): void {
+        this.selectedConnectionGroupIds = selected
+            ? new Set(this.connectionProfileGroups.map(group => group.id))
+            : new Set()
+        this.connectionGroupSelectionInitialized = true
         this.refreshConnectionGroupSections()
+    }
+
+    toggleConnectionGroup (groupId: string, selected: boolean): void {
+        const selection = new Set(this.selectedConnectionGroupIds)
+        if (selected) {
+            selection.add(groupId)
+        } else {
+            selection.delete(groupId)
+        }
+        this.selectedConnectionGroupIds = selection
+        this.connectionGroupSelectionInitialized = true
+        this.refreshConnectionGroupSections()
+    }
+
+    isConnectionGroupSelected (groupId: string): boolean {
+        return this.selectedConnectionGroupIds.has(groupId)
+    }
+
+    isAllConnectionGroupsSelected (): boolean {
+        return this.connectionProfileGroups.length > 0
+            && this.connectionProfileGroups.every(group => this.selectedConnectionGroupIds.has(group.id))
+    }
+
+    getConnectionGroupFilterLabel (): string {
+        if (this.isAllConnectionGroupsSelected()) {
+            return this.translate.instant('All groups')
+        }
+        const selectedNames = this.connectionProfileGroups
+            .filter(group => this.selectedConnectionGroupIds.has(group.id))
+            .map(group => group.name)
+        return selectedNames.length > 0 ? selectedNames.join(', ') : this.translate.instant('Group')
     }
 
     launchProfile (profile: PartialProfile<Profile>): void {
@@ -264,14 +297,21 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
     }
 
     refreshConnectionGroupSections (): void {
+        const previousGroupIds = this.connectionProfileGroups.map(group => group.id)
+        const allPreviouslySelected = previousGroupIds.length > 0
+            && previousGroupIds.every(id => this.selectedConnectionGroupIds.has(id))
         this.connectionProfileGroups = this.getConnectionProfileGroups()
-
-        let visibleGroups = this.connectionProfileGroups
-        if (this.connectionGroupFilter === 'ungrouped') {
-            visibleGroups = visibleGroups.filter(group => group.id === 'ungrouped')
-        } else if (this.connectionGroupFilter !== 'all') {
-            visibleGroups = visibleGroups.filter(group => group.id === this.connectionGroupFilter)
+        const availableGroupIds = new Set(this.connectionProfileGroups.map(group => group.id))
+        if (!this.connectionGroupSelectionInitialized || allPreviouslySelected) {
+            this.selectedConnectionGroupIds = availableGroupIds
+            this.connectionGroupSelectionInitialized = true
+        } else {
+            this.selectedConnectionGroupIds = new Set(
+                [...this.selectedConnectionGroupIds].filter(id => availableGroupIds.has(id)),
+            )
         }
+        const visibleGroups = this.connectionProfileGroups
+            .filter(group => this.selectedConnectionGroupIds.has(group.id))
 
         const profiles = this.getBaseConnectionProfiles()
             .filter(profile => this.isProfileVisible(profile))
@@ -378,7 +418,8 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
         const group: PartialProfileGroup<ProfileGroup> = { id: '', name: result.value.trim() }
         await this.profilesService.newProfileGroup(group)
         await this.config.save()
-        this.onConnectionGroupFilterChange(group.id)
+        await this.refreshProfileGroups()
+        this.toggleConnectionGroup(group.id, true)
     }
 
     async duplicateConnectionProfile (profile: PartialProfile<Profile>): Promise<void> {
@@ -707,10 +748,7 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
     }
 
     private isConnectionProfileVisible (profile: PartialProfile<Profile>): boolean {
-        if (this.connectionGroupFilter === 'ungrouped' && profile.group) {
-            return false
-        }
-        if (this.connectionGroupFilter !== 'all' && this.connectionGroupFilter !== 'ungrouped' && profile.group !== this.connectionGroupFilter) {
+        if (!this.selectedConnectionGroupIds.has(profile.group || 'ungrouped')) {
             return false
         }
         return this.isProfileVisible(profile)

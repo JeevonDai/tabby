@@ -88,3 +88,19 @@ profile-icon {
         padding: 0.5rem;
     }
 }
+
+.connection-group-filter {
+    max-width: 16rem;
+
+    > .btn {
+        max-width: 16rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .dropdown-menu {
+        max-height: 20rem;
+        overflow-y: auto;
+    }
+}
