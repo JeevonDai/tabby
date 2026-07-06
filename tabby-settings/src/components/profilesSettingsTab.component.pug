@@ -363,4 +363,15 @@ ul.nav-tabs(ngbNav, #nav='ngbNav', [(activeId)]='activeProfilesSubTab')
                         (ngModelChange)='config.save()'
                     )
 
+            ng-container(*ngIf='hasTelnetProvider')
+                h4.mb-3.mt-4(translate) Telnet
+
+                .form-line
+                    .header
+                        .title(translate) Warn when closing active connections
+                    toggle(
+                        [(ngModel)]='config.store.telnet.warnOnClose',
+                        (ngModelChange)='config.save()',
+                    )
+
 div([ngbNavOutlet]='nav')

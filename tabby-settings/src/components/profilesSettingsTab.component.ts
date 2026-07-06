@@ -103,6 +103,10 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
         return this.profileProviders.some(p => p.id === 'ssh')
     }
 
+    get hasTelnetProvider (): boolean {
+        return this.profileProviders.some(p => p.id === 'telnet')
+    }
+
     async ngOnInit (): Promise<void> {
         await this.refreshProfileGroups()
         await this.refreshProfiles()

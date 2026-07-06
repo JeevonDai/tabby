@@ -76,6 +76,9 @@ export class TelnetTabComponent extends ConnectableTerminalTabComponent<TelnetPr
         if (!this.session?.open) {
             return true
         }
+        if (!this.config.store.telnet.warnOnClose) {
+            return true
+        }
         return (await this.platform.showMessageBox(
             {
                 type: 'warning',
