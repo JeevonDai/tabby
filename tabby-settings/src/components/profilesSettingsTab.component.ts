@@ -1,6 +1,6 @@
 import { marker as _ } from '@biesbjerg/ngx-translate-extract-marker'
 import deepClone from 'clone-deep'
-import { ChangeDetectorRef, Component, Inject } from '@angular/core'
+import { ChangeDetectorRef, Component, Inject, Input } from '@angular/core'
 import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop'
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap'
 import { interval } from 'rxjs'
@@ -53,6 +53,7 @@ interface ConnectableTabLike extends BaseTabComponent {
 
 /** @hidden */
 @Component({
+    selector: 'profiles-settings-tab',
     templateUrl: './profilesSettingsTab.component.pug',
     styleUrls: ['./profilesSettingsTab.component.scss'],
 })
@@ -78,6 +79,7 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
         : 'localhost:0.0'
     private descriptionCache = new Map<string, string|null>()
     private connectionAddressCache = new Map<string, string>()
+    @Input() initialSubTab?: string
 
     private connectionGroupSelectionInitialized = false
 
@@ -108,6 +110,9 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
     }
 
     async ngOnInit (): Promise<void> {
+        if (this.initialSubTab) {
+            this.activeProfilesSubTab = this.initialSubTab
+        }
         await this.refreshProfileGroups()
         await this.refreshProfiles()
         await this.maybeClearUngroupedConnections()

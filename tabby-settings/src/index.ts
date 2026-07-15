@@ -11,6 +11,7 @@ import { EditProfileGroupModalComponent } from './components/editProfileGroupMod
 import { HotkeyInputModalComponent } from './components/hotkeyInputModal.component'
 import { HotkeySettingsTabComponent } from './components/hotkeySettingsTab.component'
 import { MultiHotkeyInputComponent } from './components/multiHotkeyInput.component'
+import { ConnectionsTabComponent } from './components/connectionsTab.component'
 import { SettingsTabComponent } from './components/settingsTab.component'
 import { SettingsTabBodyComponent } from './components/settingsTabBody.component'
 import { WindowSettingsTabComponent } from './components/windowSettingsTab.component'
@@ -57,6 +58,7 @@ import { HotkeySettingsTabProvider, WindowSettingsTabProvider, VaultSettingsTabP
         HotkeyInputModalComponent,
         HotkeySettingsTabComponent,
         MultiHotkeyInputComponent,
+        ConnectionsTabComponent,
         ProfilesSettingsTabComponent,
         SettingsTabComponent,
         SettingsTabBodyComponent,
@@ -74,19 +76,15 @@ export default class SettingsModule {
         public configSync: ConfigSyncService,
         app: AppService,
         hotkeys: HotkeysService,
-        settingsNavigation: SettingsNavigationService,
     ) {
         hotkeys.hotkey$.subscribe(async hotkey => {
             if (hotkey === 'open-connections-settings') {
-                settingsNavigation.requestProfilesSubTab('connections')
-                const settingsTab = app.tabs.find(tab => tab instanceof SettingsTabComponent) as SettingsTabComponent | undefined
-                if (settingsTab) {
-                    settingsTab.activeTab = 'profiles'
-                    app.selectTab(settingsTab)
+                const connectionsTab = app.tabs.find(tab => tab instanceof ConnectionsTabComponent) as ConnectionsTabComponent | undefined
+                if (connectionsTab) {
+                    app.selectTab(connectionsTab)
                 } else {
                     app.openNewTabRaw({
-                        type: SettingsTabComponent,
-                        inputs: { activeTab: 'profiles' },
+                        type: ConnectionsTabComponent,
                     })
                 }
             } else if (hotkey.startsWith('settings-tab.')) {
@@ -105,4 +103,5 @@ export {
     SettingsTabComponent,
     EditProfileModalComponent,
     EditProfileGroupModalComponent,
+    ConnectionsTabComponent,
 }
