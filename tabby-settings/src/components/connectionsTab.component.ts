@@ -19,10 +19,28 @@ export class ConnectionsTabComponent extends BaseTabComponent {
     }
 
     onWheel (event: WheelEvent): void {
-        const target = event.currentTarget as HTMLElement
-        if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
-            target.scrollLeft += event.deltaY
+        const container = event.currentTarget as HTMLElement
+        if (
+            container.scrollWidth > container.clientWidth
+            && !this.isInsideScrollableY(event.target as HTMLElement, container)
+            && Math.abs(event.deltaY) > Math.abs(event.deltaX)
+        ) {
+            container.scrollLeft += event.deltaY
             event.preventDefault()
         }
+    }
+
+    private isInsideScrollableY (element: HTMLElement|null, boundary: HTMLElement): boolean {
+        while (element && element !== boundary) {
+            const style = getComputedStyle(element)
+            if (
+                (style.overflowY === 'auto' || style.overflowY === 'scroll')
+                && element.scrollHeight > element.clientHeight
+            ) {
+                return true
+            }
+            element = element.parentElement
+        }
+        return false
     }
 }
