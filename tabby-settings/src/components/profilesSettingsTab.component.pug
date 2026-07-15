@@ -160,6 +160,7 @@ ul.nav-tabs(ngbNav, #nav='ngbNav', [(activeId)]='activeProfilesSubTab')
                                         *ngFor='let profile of section.profiles',
                                         cdkDrag,
                                         [cdkDragData]='profile',
+                                        (cdkDragMoved)='onConnectionProfileDragMoved($event)',
                                         (contextmenu)='showConnectionProfileContextMenu($event, profile)'
                                     )
                                         td.connection-drag-cell

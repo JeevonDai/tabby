@@ -1,7 +1,7 @@
 import { marker as _ } from '@biesbjerg/ngx-translate-extract-marker'
 import deepClone from 'clone-deep'
 import { ChangeDetectorRef, Component, Inject, Input } from '@angular/core'
-import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop'
+import { CdkDragDrop, CdkDragMove, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop'
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap'
 import { interval } from 'rxjs'
 import { AppService, BaseTabComponent, ConfigService, HostAppService, Profile, SelectorService, ProfilesService, PromptModalComponent, PlatformService, BaseComponent, PartialProfile, ProfileProvider, TranslateService, Platform, ProfileGroup, PartialProfileGroup, QuickConnectProfileProvider, NotificationsService, MenuItemOptions, SplitTabComponent } from 'tabby-core'
@@ -383,6 +383,25 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
         await this.profilesService.writeProfile(profile)
         await this.config.save()
         this.refreshConnectionGroupSections()
+    }
+
+    onConnectionProfileDragMoved (event: CdkDragMove<PartialProfile<Profile>>): void {
+        const scrollContainer = event.source.element.nativeElement.closest('.connections-tab-body') as HTMLElement|null
+        if (!scrollContainer || scrollContainer.scrollWidth <= scrollContainer.clientWidth) {
+            return
+        }
+
+        const edgeSize = 80
+        const maxStep = 28
+        const bounds = scrollContainer.getBoundingClientRect()
+        const distanceFromLeft = event.pointerPosition.x - bounds.left
+        const distanceFromRight = bounds.right - event.pointerPosition.x
+
+        if (distanceFromLeft < edgeSize) {
+            scrollContainer.scrollLeft -= Math.ceil(maxStep * (1 - Math.max(distanceFromLeft, 0) / edgeSize))
+        } else if (distanceFromRight < edgeSize) {
+            scrollContainer.scrollLeft += Math.ceil(maxStep * (1 - Math.max(distanceFromRight, 0) / edgeSize))
+        }
     }
 
     getConnectionTypeIcon (profile: PartialProfile<Profile>): string {
