@@ -109,130 +109,131 @@ ul.nav-tabs(ngbNav, #nav='ngbNav', [(activeId)]='activeProfilesSubTab')
     li([ngbNavItem]='"connections"')
         a(ngbNavLink, translate) Connections
         ng-template(ngbNavContent)
-            .d-flex.mb-2.align-items-center.gap-2
-                .input-group
-                    .input-group-text
-                        i.fas.fa-fw.fa-search
-                    input.form-control(type='search', [placeholder]='"Filter"|translate', [(ngModel)]='filter', (ngModelChange)='refreshConnectionGroupSections()')
+            .connections-tab-pane
+                .d-flex.mb-2.align-items-center.gap-2
+                    .input-group
+                        .input-group-text
+                            i.fas.fa-fw.fa-search
+                        input.form-control(type='search', [placeholder]='"Filter"|translate', [(ngModel)]='filter', (ngModelChange)='refreshConnectionGroupSections()')
 
-                .dropdown.flex-shrink-0.connection-group-filter(
-                    ngbDropdown,
-                    [autoClose]='"outside"'
-                )
-                    button.btn.btn-outline-secondary.dropdown-toggle(
-                        type='button',
-                        ngbDropdownToggle,
-                        [title]='getConnectionGroupFilterLabel()'
-                    ) {{getConnectionGroupFilterLabel()}}
-                    .dropdown-menu(ngbDropdownMenu)
-                        label.dropdown-item.d-flex.align-items-center.gap-2
-                            input.form-check-input.mt-0(
-                                type='checkbox',
-                                [checked]='isAllConnectionGroupsSelected()',
-                                (change)='toggleAllConnectionGroups($any($event.target).checked)'
-                            )
-                            span(translate) All groups
-                        .dropdown-divider
-                        label.dropdown-item.d-flex.align-items-center.gap-2(*ngFor='let group of connectionProfileGroups')
-                            input.form-check-input.mt-0(
-                                type='checkbox',
-                                [checked]='isConnectionGroupSelected(group.id)',
-                                (change)='toggleConnectionGroup(group.id, $any($event.target).checked)'
-                            )
-                            span {{group.name}}
-
-                button.btn.btn-outline-secondary.flex-shrink-0((click)='newConnectionProfileGroup()')
-                    i.fas.fa-fw.fa-folder-plus
-                    span(translate) New profile Group
-
-            .connections-grouped-view(*ngIf='connectionGroupSections.length > 0', cdkDropListGroup)
-                .connection-group-section(*ngFor='let section of connectionGroupSections')
-                        .connection-group-header
-                            span([style.color]='section.textColor') {{section.name}}
-                        .table-responsive.connection-profile-table
-                            table.table.table-sm.table-hover.align-middle
-                                tbody(
-                                    cdkDropList,
-                                    [cdkDropListData]='section.profiles',
-                                    (cdkDropListDropped)='onConnectionProfileDropped($event, section)'
+                    .dropdown.flex-shrink-0.connection-group-filter(
+                        ngbDropdown,
+                        [autoClose]='"outside"'
+                    )
+                        button.btn.btn-outline-secondary.dropdown-toggle(
+                            type='button',
+                            ngbDropdownToggle,
+                            [title]='getConnectionGroupFilterLabel()'
+                        ) {{getConnectionGroupFilterLabel()}}
+                        .dropdown-menu(ngbDropdownMenu)
+                            label.dropdown-item.d-flex.align-items-center.gap-2
+                                input.form-check-input.mt-0(
+                                    type='checkbox',
+                                    [checked]='isAllConnectionGroupsSelected()',
+                                    (change)='toggleAllConnectionGroups($any($event.target).checked)'
                                 )
-                                    tr.connection-profile-row(
-                                        *ngFor='let profile of section.profiles',
-                                        cdkDrag,
-                                        [cdkDragData]='profile',
-                                        (cdkDragMoved)='onConnectionProfileDragMoved($event)',
-                                        (contextmenu)='showConnectionProfileContextMenu($event, profile)'
-                                    )
-                                        td.connection-drag-cell
-                                            button.btn.btn-sm.btn-link.connection-drag-handle(
-                                                type='button',
-                                                cdkDragHandle
-                                            )
-                                                i.fas.fa-fw.fa-grip-vertical
-                                        td.connection-type-cell
-                                            i.fas.fa-fw(class='fa-{{getConnectionTypeIcon(profile)}}')
-                                        td
-                                            input.form-control.form-control-sm(
-                                                type='text',
-                                                [(ngModel)]='profile.name',
-                                                [style.color]='getProfileGroupTextColor(profile)',
-                                                (blur)='saveConnectionProfile(profile)'
-                                            )
-                                        td
-                                            input.form-control.form-control-sm(
-                                                *ngIf='profile.type === "serial"',
-                                                type='text',
-                                                [placeholder]='getConnectionAddressPlaceholder(profile)',
-                                                [ngModel]='getConnectionAddress(profile)',
-                                                (ngModelChange)='onConnectionAddressInput(profile, $event)',
-                                                (blur)='saveConnectionAddress(profile)'
-                                            )
-                                            input.form-control.form-control-sm(
-                                                *ngIf='profile.type === "telnet"',
-                                                type='text',
-                                                [placeholder]='getConnectionAddressPlaceholder(profile)',
-                                                [ngModel]='getConnectionAddress(profile)',
-                                                (ngModelChange)='onConnectionAddressInput(profile, $event)',
-                                                (blur)='saveConnectionAddress(profile)'
-                                            )
-                                            input.form-control.form-control-sm(
-                                                *ngIf='profile.type === "ssh"',
-                                                type='text',
-                                                [placeholder]='getConnectionAddressPlaceholder(profile)',
-                                                [ngModel]='getConnectionAddress(profile)',
-                                                (ngModelChange)='onConnectionAddressInput(profile, $event)',
-                                                (blur)='saveConnectionAddress(profile)'
-                                            )
-                                        td.text-end.connection-actions-cell
-                                            button.btn.btn-sm.btn-link((click)='launchProfile(profile)')
-                                                i.fas.fa-play([class]='getConnectionLaunchIconClass(profile)')
-                                            button.btn.btn-sm.btn-link((click)='editProfile(profile)')
-                                                i.fas.fa-pencil-alt
-                                            button.btn.btn-sm.btn-link((click)='duplicateConnectionProfile(profile)')
-                                                i.fas.fa-copy
-                                            button.btn.btn-sm.btn-link.text-danger((click)='deleteProfile(profile)')
-                                                i.fas.fa-trash-alt
-                                    tr.connection-draft-row
-                                        td
-                                        td.connection-type-cell.text-muted
-                                            i.fas.fa-fw.fa-plus
-                                        td
-                                            input.form-control.form-control-sm(
-                                                type='text',
-                                                disabled,
-                                                [placeholder]='"Name"|translate'
-                                            )
-                                        td
-                                            input.form-control.form-control-sm(
-                                                type='text',
-                                                [placeholder]='getConnectionDraftPlaceholder()',
-                                                [ngModel]='getConnectionDraft(section.id)',
-                                                (ngModelChange)='setConnectionDraft(section.id, $event)',
-                                                (blur)='saveConnectionDraft(section.id)'
-                                            )
-                                        td.connection-actions-cell
+                                span(translate) All groups
+                            .dropdown-divider
+                            label.dropdown-item.d-flex.align-items-center.gap-2(*ngFor='let group of connectionProfileGroups')
+                                input.form-check-input.mt-0(
+                                    type='checkbox',
+                                    [checked]='isConnectionGroupSelected(group.id)',
+                                    (change)='toggleConnectionGroup(group.id, $any($event.target).checked)'
+                                )
+                                span {{group.name}}
 
-            .text-muted.text-center.py-3(*ngIf='connectionGroupSections.length === 0', translate) No profiles found
+                    button.btn.btn-outline-secondary.flex-shrink-0((click)='newConnectionProfileGroup()')
+                        i.fas.fa-fw.fa-folder-plus
+                        span(translate) New profile Group
+
+                .connections-grouped-view(*ngIf='connectionGroupSections.length > 0', cdkDropListGroup)
+                    .connection-group-section(*ngFor='let section of connectionGroupSections')
+                            .connection-group-header
+                                span([style.color]='section.textColor') {{section.name}}
+                            .table-responsive.connection-profile-table
+                                table.table.table-sm.table-hover.align-middle
+                                    tbody(
+                                        cdkDropList,
+                                        [cdkDropListData]='section.profiles',
+                                        (cdkDropListDropped)='onConnectionProfileDropped($event, section)'
+                                    )
+                                        tr.connection-profile-row(
+                                            *ngFor='let profile of section.profiles',
+                                            cdkDrag,
+                                            [cdkDragData]='profile',
+                                            (cdkDragMoved)='onConnectionProfileDragMoved($event)',
+                                            (contextmenu)='showConnectionProfileContextMenu($event, profile)'
+                                        )
+                                            td.connection-drag-cell
+                                                button.btn.btn-sm.btn-link.connection-drag-handle(
+                                                    type='button',
+                                                    cdkDragHandle
+                                                )
+                                                    i.fas.fa-fw.fa-grip-vertical
+                                            td.connection-type-cell
+                                                i.fas.fa-fw(class='fa-{{getConnectionTypeIcon(profile)}}')
+                                            td
+                                                input.form-control.form-control-sm(
+                                                    type='text',
+                                                    [(ngModel)]='profile.name',
+                                                    [style.color]='getProfileGroupTextColor(profile)',
+                                                    (blur)='saveConnectionProfile(profile)'
+                                                )
+                                            td
+                                                input.form-control.form-control-sm(
+                                                    *ngIf='profile.type === "serial"',
+                                                    type='text',
+                                                    [placeholder]='getConnectionAddressPlaceholder(profile)',
+                                                    [ngModel]='getConnectionAddress(profile)',
+                                                    (ngModelChange)='onConnectionAddressInput(profile, $event)',
+                                                    (blur)='saveConnectionAddress(profile)'
+                                                )
+                                                input.form-control.form-control-sm(
+                                                    *ngIf='profile.type === "telnet"',
+                                                    type='text',
+                                                    [placeholder]='getConnectionAddressPlaceholder(profile)',
+                                                    [ngModel]='getConnectionAddress(profile)',
+                                                    (ngModelChange)='onConnectionAddressInput(profile, $event)',
+                                                    (blur)='saveConnectionAddress(profile)'
+                                                )
+                                                input.form-control.form-control-sm(
+                                                    *ngIf='profile.type === "ssh"',
+                                                    type='text',
+                                                    [placeholder]='getConnectionAddressPlaceholder(profile)',
+                                                    [ngModel]='getConnectionAddress(profile)',
+                                                    (ngModelChange)='onConnectionAddressInput(profile, $event)',
+                                                    (blur)='saveConnectionAddress(profile)'
+                                                )
+                                            td.text-end.connection-actions-cell
+                                                button.btn.btn-sm.btn-link((click)='launchProfile(profile)')
+                                                    i.fas.fa-play([class]='getConnectionLaunchIconClass(profile)')
+                                                button.btn.btn-sm.btn-link((click)='editProfile(profile)')
+                                                    i.fas.fa-pencil-alt
+                                                button.btn.btn-sm.btn-link((click)='duplicateConnectionProfile(profile)')
+                                                    i.fas.fa-copy
+                                                button.btn.btn-sm.btn-link.text-danger((click)='deleteProfile(profile)')
+                                                    i.fas.fa-trash-alt
+                                        tr.connection-draft-row
+                                            td
+                                            td.connection-type-cell.text-muted
+                                                i.fas.fa-fw.fa-plus
+                                            td
+                                                input.form-control.form-control-sm(
+                                                    type='text',
+                                                    disabled,
+                                                    [placeholder]='"Name"|translate'
+                                                )
+                                            td
+                                                input.form-control.form-control-sm(
+                                                    type='text',
+                                                    [placeholder]='getConnectionDraftPlaceholder()',
+                                                    [ngModel]='getConnectionDraft(section.id)',
+                                                    (ngModelChange)='setConnectionDraft(section.id, $event)',
+                                                    (blur)='saveConnectionDraft(section.id)'
+                                                )
+                                            td.connection-actions-cell
+
+                .text-muted.text-center.py-3(*ngIf='connectionGroupSections.length === 0', translate) No profiles found
 
     li([ngbNavItem]='"advanced"')
         a(ngbNavLink, translate) Advanced
