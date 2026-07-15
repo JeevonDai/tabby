@@ -150,11 +150,15 @@ ul.nav-tabs(ngbNav, #nav='ngbNav', [(activeId)]='activeProfilesSubTab')
                     .connection-group-section(*ngFor='let section of connectionGroupSections')
                             .connection-group-header
                                 span([style.color]='section.textColor') {{section.name}}
-                                button.btn.btn-sm.btn-link.hover-reveal.ms-2(
-                                    *ngIf='getEditableConnectionGroup(section) as group',
-                                    (click)='editProfileGroup(group)'
-                                )
-                                    i.fas.fa-pencil-alt
+                                ng-container(*ngIf='getEditableConnectionGroup(section) as group')
+                                    button.btn.btn-sm.btn-link.hover-reveal.ms-2(
+                                        (click)='$event.stopPropagation(); editProfileGroup(group)'
+                                    )
+                                        i.fas.fa-pencil-alt
+                                    button.btn.btn-sm.btn-link.hover-reveal.text-danger(
+                                        (click)='$event.stopPropagation(); deleteProfileGroup(group)'
+                                    )
+                                        i.fas.fa-trash-alt
                             .table-responsive.connection-profile-table
                                 table.table.table-sm.table-hover.align-middle
                                     tbody(
@@ -166,8 +170,6 @@ ul.nav-tabs(ngbNav, #nav='ngbNav', [(activeId)]='activeProfilesSubTab')
                                             *ngFor='let profile of section.profiles',
                                             cdkDrag,
                                             [cdkDragData]='profile',
-                                            (cdkDragMoved)='onConnectionProfileDragMoved($event)',
-                                            (cdkDragEnded)='stopConnectionDragScroll()',
                                             (contextmenu)='showConnectionProfileContextMenu($event, profile)'
                                         )
                                             td.connection-drag-cell

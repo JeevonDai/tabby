@@ -1,7 +1,7 @@
 import { marker as _ } from '@biesbjerg/ngx-translate-extract-marker'
 import deepClone from 'clone-deep'
 import { ChangeDetectorRef, Component, Inject, Input } from '@angular/core'
-import { CdkDragDrop, CdkDragMove, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop'
+import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop'
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap'
 import { interval } from 'rxjs'
 import { AppService, BaseTabComponent, ConfigService, HostAppService, Profile, SelectorService, ProfilesService, PromptModalComponent, PlatformService, BaseComponent, PartialProfile, ProfileProvider, TranslateService, Platform, ProfileGroup, PartialProfileGroup, QuickConnectProfileProvider, NotificationsService, MenuItemOptions, SplitTabComponent } from 'tabby-core'
@@ -82,9 +82,6 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
     @Input() initialSubTab?: string
 
     private connectionGroupSelectionInitialized = false
-    private connectionDragScrollFrame: number|null = null
-    private connectionDragScrollContainer: HTMLElement|null = null
-    private connectionDragScrollStep = 0
 
     constructor (
         public config: ConfigService,
@@ -386,54 +383,6 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
         await this.profilesService.writeProfile(profile)
         await this.config.save()
         this.refreshConnectionGroupSections()
-    }
-
-    onConnectionProfileDragMoved (event: CdkDragMove<PartialProfile<Profile>>): void {
-        const scrollContainer = event.source.element.nativeElement.closest('.connections-tab-body') as HTMLElement|null
-        if (!scrollContainer || scrollContainer.scrollWidth <= scrollContainer.clientWidth) {
-            this.stopConnectionDragScroll()
-            return
-        }
-
-        const edgeSize = 80
-        const maxStep = 28
-        const bounds = scrollContainer.getBoundingClientRect()
-        const distanceFromLeft = event.pointerPosition.x - bounds.left
-        const distanceFromRight = bounds.right - event.pointerPosition.x
-
-        if (distanceFromLeft < edgeSize) {
-            this.startConnectionDragScroll(scrollContainer, -Math.ceil(maxStep * (1 - Math.max(distanceFromLeft, 0) / edgeSize)))
-        } else if (distanceFromRight < edgeSize) {
-            this.startConnectionDragScroll(scrollContainer, Math.ceil(maxStep * (1 - Math.max(distanceFromRight, 0) / edgeSize)))
-        } else {
-            this.stopConnectionDragScroll()
-        }
-    }
-
-    stopConnectionDragScroll (): void {
-        if (this.connectionDragScrollFrame !== null) {
-            cancelAnimationFrame(this.connectionDragScrollFrame)
-            this.connectionDragScrollFrame = null
-        }
-        this.connectionDragScrollContainer = null
-        this.connectionDragScrollStep = 0
-    }
-
-    private startConnectionDragScroll (container: HTMLElement, step: number): void {
-        this.connectionDragScrollContainer = container
-        this.connectionDragScrollStep = step
-        if (this.connectionDragScrollFrame !== null) {
-            return
-        }
-        const scroll = () => {
-            if (!this.connectionDragScrollContainer || !this.connectionDragScrollStep) {
-                this.stopConnectionDragScroll()
-                return
-            }
-            this.connectionDragScrollContainer.scrollLeft += this.connectionDragScrollStep
-            this.connectionDragScrollFrame = requestAnimationFrame(scroll)
-        }
-        this.connectionDragScrollFrame = requestAnimationFrame(scroll)
     }
 
     getConnectionTypeIcon (profile: PartialProfile<Profile>): string {
