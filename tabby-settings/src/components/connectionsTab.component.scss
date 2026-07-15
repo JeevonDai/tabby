@@ -1,0 +1,68 @@
+:host {
+    display: flex;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.connections-tab-body {
+    display: flex;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    padding: 20px 30px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    outline: none;
+}
+
+:host ::ng-deep profiles-settings-tab {
+    display: flex;
+    flex: 1 0 auto;
+    flex-direction: column;
+    height: 100%;
+    min-width: 100%;
+    min-height: 0;
+
+    > h3,
+    > .nav-tabs {
+        flex: none;
+    }
+
+    > .tab-content {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: visible;
+
+        > .tab-pane {
+            height: 100%;
+            min-height: 0;
+        }
+
+        > .tab-pane.active {
+            display: block;
+            height: 100%;
+            min-width: 100%;
+            column-width: 520px;
+            column-gap: 24px;
+            column-fill: auto;
+
+            > * {
+                break-inside: avoid;
+            }
+
+            .connections-grouped-view {
+                break-inside: auto;
+            }
+
+            .connection-group-section {
+                display: inline-block;
+                width: 520px;
+                max-width: 100%;
+                break-inside: avoid;
+                vertical-align: top;
+            }
+        }
+    }
+}
