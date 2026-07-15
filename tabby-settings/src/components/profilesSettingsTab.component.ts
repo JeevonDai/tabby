@@ -82,6 +82,9 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
     @Input() initialSubTab?: string
 
     private connectionGroupSelectionInitialized = false
+    private connectionDragScrollFrame: number|null = null
+    private connectionDragScrollContainer: HTMLElement|null = null
+    private connectionDragScrollStep = 0
 
     constructor (
         public config: ConfigService,
@@ -388,6 +391,7 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
     onConnectionProfileDragMoved (event: CdkDragMove<PartialProfile<Profile>>): void {
         const scrollContainer = event.source.element.nativeElement.closest('.connections-tab-body') as HTMLElement|null
         if (!scrollContainer || scrollContainer.scrollWidth <= scrollContainer.clientWidth) {
+            this.stopConnectionDragScroll()
             return
         }
 
@@ -398,10 +402,38 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
         const distanceFromRight = bounds.right - event.pointerPosition.x
 
         if (distanceFromLeft < edgeSize) {
-            scrollContainer.scrollLeft -= Math.ceil(maxStep * (1 - Math.max(distanceFromLeft, 0) / edgeSize))
+            this.startConnectionDragScroll(scrollContainer, -Math.ceil(maxStep * (1 - Math.max(distanceFromLeft, 0) / edgeSize)))
         } else if (distanceFromRight < edgeSize) {
-            scrollContainer.scrollLeft += Math.ceil(maxStep * (1 - Math.max(distanceFromRight, 0) / edgeSize))
+            this.startConnectionDragScroll(scrollContainer, Math.ceil(maxStep * (1 - Math.max(distanceFromRight, 0) / edgeSize)))
+        } else {
+            this.stopConnectionDragScroll()
         }
+    }
+
+    stopConnectionDragScroll (): void {
+        if (this.connectionDragScrollFrame !== null) {
+            cancelAnimationFrame(this.connectionDragScrollFrame)
+            this.connectionDragScrollFrame = null
+        }
+        this.connectionDragScrollContainer = null
+        this.connectionDragScrollStep = 0
+    }
+
+    private startConnectionDragScroll (container: HTMLElement, step: number): void {
+        this.connectionDragScrollContainer = container
+        this.connectionDragScrollStep = step
+        if (this.connectionDragScrollFrame !== null) {
+            return
+        }
+        const scroll = () => {
+            if (!this.connectionDragScrollContainer || !this.connectionDragScrollStep) {
+                this.stopConnectionDragScroll()
+                return
+            }
+            this.connectionDragScrollContainer.scrollLeft += this.connectionDragScrollStep
+            this.connectionDragScrollFrame = requestAnimationFrame(scroll)
+        }
+        this.connectionDragScrollFrame = requestAnimationFrame(scroll)
     }
 
     getConnectionTypeIcon (profile: PartialProfile<Profile>): string {
@@ -448,6 +480,10 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
         await this.config.save()
         await this.refreshProfileGroups()
         this.toggleConnectionGroup(group.id, true)
+    }
+
+    getEditableConnectionGroup (section: ConnectionGroupSection): PartialProfileGroup<CollapsableProfileGroup>|null {
+        return this.profileGroups.find(group => group.id === section.id && group.editable && group.id !== 'ungrouped') ?? null
     }
 
     async duplicateConnectionProfile (profile: PartialProfile<Profile>): Promise<void> {
