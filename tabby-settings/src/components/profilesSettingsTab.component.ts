@@ -41,6 +41,7 @@ interface ConnectionGroupSection {
     name: string
     profiles: PartialProfile<Profile>[]
     textColor: string|null
+    collapsed: boolean
 }
 
 type ConnectionLaunchState = 'none' | 'connected' | 'disconnected'
@@ -332,6 +333,7 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
             name: group.name,
             profiles: profiles.filter(profile => (profile.group || 'ungrouped') === group.id),
             textColor: group.id === 'ungrouped' ? null : this.profilesService.getProfileGroupColor(group.id),
+            collapsed: this.profileGroups.find(profileGroup => profileGroup.id === group.id)?.collapsed ?? false,
         }))
         for (const section of this.connectionGroupSections) {
             if (!this.connectionDrafts[section.id]) {
@@ -447,6 +449,15 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
 
     getEditableConnectionGroup (section: ConnectionGroupSection): PartialProfileGroup<CollapsableProfileGroup>|null {
         return this.profileGroups.find(group => group.id === section.id && group.editable && group.id !== 'ungrouped') ?? null
+    }
+
+    toggleConnectionGroupCollapse (section: ConnectionGroupSection): void {
+        const group = this.profileGroups.find(profileGroup => profileGroup.id === section.id)
+        if (!group) {
+            return
+        }
+        this.toggleGroupCollapse(group)
+        section.collapsed = group.collapsed ?? false
     }
 
     async duplicateConnectionProfile (profile: PartialProfile<Profile>): Promise<void> {

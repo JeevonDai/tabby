@@ -150,16 +150,23 @@ ul.nav-tabs(ngbNav, #nav='ngbNav', [(activeId)]='activeProfilesSubTab')
                     .connection-group-section(*ngFor='let section of connectionGroupSections')
                             .connection-group-header
                                 span([style.color]='section.textColor') {{section.name}}
-                                ng-container(*ngIf='getEditableConnectionGroup(section) as group')
-                                    button.btn.btn-sm.btn-link.hover-reveal.ms-2(
+                                .connection-group-actions
+                                    button.btn.btn-sm.btn-link(
+                                        *ngIf='getEditableConnectionGroup(section) as group',
                                         (click)='$event.stopPropagation(); editProfileGroup(group)'
                                     )
                                         i.fas.fa-pencil-alt
-                                    button.btn.btn-sm.btn-link.hover-reveal.text-danger(
+                                    button.btn.btn-sm.btn-link(
+                                        (click)='$event.stopPropagation(); toggleConnectionGroupCollapse(section)'
+                                    )
+                                        i.fas.fa-chevron-down(*ngIf='section.collapsed')
+                                        i.fas.fa-chevron-up(*ngIf='!section.collapsed')
+                                    button.btn.btn-sm.btn-link.text-danger(
+                                        *ngIf='getEditableConnectionGroup(section) as group',
                                         (click)='$event.stopPropagation(); deleteProfileGroup(group)'
                                     )
                                         i.fas.fa-trash-alt
-                            .table-responsive.connection-profile-table
+                            .table-responsive.connection-profile-table(*ngIf='!section.collapsed')
                                 table.table.table-sm.table-hover.align-middle
                                     tbody(
                                         cdkDropList,

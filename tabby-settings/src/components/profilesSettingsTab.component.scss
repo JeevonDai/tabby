@@ -62,7 +62,7 @@ profile-icon {
         align-items: center;
         font-weight: 600;
         font-size: 0.85rem;
-        padding: 0.35rem 0.5rem;
+        padding: 0.35rem 0rem 0.35rem 0.5rem;
         margin-bottom: 0.25rem;
         border-radius: 0.25rem;
         background: var(--theme-bg-less);
@@ -72,11 +72,24 @@ profile-icon {
         }
     }
 
+    .connection-group-actions,
     .connection-actions-cell {
         width: 6.5rem;
         min-width: 6.5rem;
         white-space: nowrap;
         text-align: right;
+    }
+
+    .connection-group-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+
+        .btn-link {
+            width: 1.75rem;
+            padding-left: 0.35rem;
+            padding-right: 0.35rem;
+        }
     }
 
     .connection-draft-row td {

@@ -6,7 +6,8 @@
 .DESCRIPTION
     1. 在 tabby-<plugin> 目录执行 npm run build（即 webpack）
     2. 将 dist/、src/、package.json 同步到 Tabby 内置插件目录
-    3. 目标路径可写时无需管理员权限；写入 Program Files 等受保护目录时自动请求 UAC
+    3. 将所选插件的 dist/index.js 打包为可直接解压到 Tabby 安装根目录的 ZIP
+    4. 目标路径可写时无需管理员权限；写入 Program Files 等受保护目录时自动请求 UAC
 
 .PARAMETER Plugin
     要部署的插件名称（不含 tabby- 前缀），例如 settings、core、electron。
@@ -21,6 +22,9 @@
 .PARAMETER SkipBuild
     跳过构建，仅同步已有 dist 产物。
 
+.PARAMETER PackagePath
+    构建产物压缩包路径。默认为仓库根目录下的“自带插件.zip”。
+
 .EXAMPLE
     .\scripts\deploy-plugins.ps1 -Plugin settings
 
@@ -32,11 +36,15 @@
 
 .EXAMPLE
     .\scripts\deploy-plugins.ps1 -Plugin settings -TabbyPath "$env:LOCALAPPDATA\Tabby"
+
+.EXAMPLE
+    .\scripts\deploy-plugins.ps1 -Plugin "settings, telnet, terminal, core, electron, ssh"
 #>
 param(
     [string]$Plugin = 'settings',
     [string]$TabbyPath = '',
-    [switch]$SkipBuild
+    [switch]$SkipBuild,
+    [string]$PackagePath = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -190,6 +198,52 @@ function Invoke-DeployPlugin {
     Write-Host "  时间: $($remote.LastWriteTime)"
 }
 
+function New-PluginPackage {
+    param(
+        [string[]]$PluginNames,
+        [string]$OutputPath
+    )
+
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+
+    $outputDirectory = Split-Path $OutputPath -Parent
+    if (-not (Test-Path $outputDirectory)) {
+        New-Item -ItemType Directory -Path $outputDirectory -Force | Out-Null
+    }
+    if (Test-Path -LiteralPath $OutputPath) {
+        Remove-Item -LiteralPath $OutputPath -Force
+    }
+
+    $archive = [System.IO.Compression.ZipFile]::Open(
+        $OutputPath,
+        [System.IO.Compression.ZipArchiveMode]::Create
+    )
+    try {
+        foreach ($pluginName in $PluginNames) {
+            $source = Join-Path $RepoRoot "tabby-$pluginName\dist\index.js"
+            if (-not (Test-Path -LiteralPath $source)) {
+                throw "打包失败，未找到构建产物: $source"
+            }
+
+            $entryName = "resources/builtin-plugins/tabby-$pluginName/dist/index.js"
+            [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile(
+                $archive,
+                $source,
+                $entryName,
+                [System.IO.Compression.CompressionLevel]::Optimal
+            ) | Out-Null
+        }
+    } finally {
+        $archive.Dispose()
+    }
+
+    $package = Get-Item -LiteralPath $OutputPath
+    Write-Host "`n构建产物已打包。" -ForegroundColor Green
+    Write-Host "  文件: $($package.FullName)"
+    Write-Host "  大小: $($package.Length) 字节"
+    Write-Host "  用法: 解压到 Tabby 安装根目录并覆盖同名文件"
+}
+
 # 解析插件列表
 $ValidPlugins = @(Get-BuiltinPluginNames)
 if ($ValidPlugins.Count -eq 0) {
@@ -213,6 +267,14 @@ foreach ($p in $PluginList) {
     }
 }
 
+$ResolvedPackagePath = if ([IO.Path]::IsPathRooted($PackagePath)) {
+    [IO.Path]::GetFullPath($PackagePath)
+} elseif ($PackagePath) {
+    [IO.Path]::GetFullPath((Join-Path $RepoRoot $PackagePath))
+} else {
+    Join-Path $RepoRoot '自带插件.zip'
+}
+
 # 解析目标路径
 $ResolvedTabbyPath = Resolve-TabbyPath -ExplicitPath $TabbyPath
 
@@ -224,7 +286,8 @@ if ((Test-NeedsElevation -Path $ResolvedTabbyPath) -and -not (Test-IsAdmin)) {
         '-ExecutionPolicy', 'Bypass',
         '-File', $PSCommandPath,
         '-Plugin', $Plugin,
-        '-TabbyPath', $ResolvedTabbyPath
+        '-TabbyPath', $ResolvedTabbyPath,
+        '-PackagePath', $ResolvedPackagePath
     )
     if ($SkipBuild) {
         $argList += '-SkipBuild'
@@ -252,6 +315,7 @@ try {
         Invoke-DeployPlugin -PluginName $p -BasePath $ResolvedTabbyPath
     }
 
+    New-PluginPackage -PluginNames $PluginList -OutputPath $ResolvedPackagePath
     Write-Host "`n全部部署完成，请完全退出 Tabby 后重新启动以加载新插件。" -ForegroundColor Yellow
 } catch {
     Write-Error $_.Exception.Message
