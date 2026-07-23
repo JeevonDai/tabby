@@ -4,6 +4,7 @@
         "module": "commonjs",
         "target": "es2017",
         "moduleResolution": "node",
+        "ignoreDeprecations": "6.0",
         "declaration": false,
         "noImplicitAny": false,
         "removeComments": false,
