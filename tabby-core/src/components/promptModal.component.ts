@@ -11,6 +11,8 @@ export class PromptModalComponent {
     @Input() password: boolean
     @Input() remember: boolean
     @Input() showRememberCheckbox: boolean
+    @Input() okLabel: string|undefined
+    @Input() secondaryLabel: string|undefined
     @ViewChild('input') input: ElementRef
 
     constructor (
@@ -27,6 +29,15 @@ export class PromptModalComponent {
         this.modalInstance.close({
             value: this.value,
             remember: this.remember,
+            action: 'ok',
+        })
+    }
+
+    secondary (): void {
+        this.modalInstance.close({
+            value: this.value,
+            remember: this.remember,
+            action: 'secondary',
         })
     }
 

@@ -2651,9 +2651,9 @@ msgstr "没有会话日志文件，请先开始会话日志。"
 msgid "No template found for {type}"
 msgstr "未找到 {type} 的模板"
 
-#: tabby-terminal/src/hotkeys.ts:122
-msgid "Open session log file in folder"
-msgstr "在文件夹中打开会话日志文件"
+#: tabby-terminal/src/hotkeys.ts
+msgid "Open session log file"
+msgstr "打开会话日志文件"
 
 #: tabby-terminal/src/api/baseTerminalTab.component.ts:807
 msgid "Recording session log"
@@ -2678,6 +2678,50 @@ msgstr "会话日志已开始：{path}"
 #: tabby-terminal/src/api/baseTerminalTab.component.ts:844
 msgid "Session log stopped: {path}"
 msgstr "会话日志已停止：{path}"
+
+#: tabby-terminal/src/components/terminalSettingsTab.component.pug
+msgid "Record session logs by default"
+msgstr "默认记录会话日志"
+
+#: tabby-terminal/src/components/terminalSettingsTab.component.pug
+msgid "Start recording automatically when a connection opens"
+msgstr "连接打开时自动开始记录"
+
+#: tabby-terminal/src/components/terminalSettingsTab.component.pug
+msgid "Log file name format"
+msgstr "日志文件名格式"
+
+#: tabby-terminal/src/components/terminalSettingsTab.component.pug
+msgid "Available values:"
+msgstr "可用字段："
+
+#: tabby-terminal/src/components/terminalSettingsTab.component.pug
+msgid "Log file extension"
+msgstr "日志文件扩展名"
+
+#: tabby-terminal/src/api/baseTerminalTab.component.ts
+msgid "Log file name"
+msgstr "日志文件名"
+
+#: tabby-terminal/src/api/baseTerminalTab.component.ts
+msgid "Rename session log"
+msgstr "重命名会话日志"
+
+#: tabby-terminal/src/api/baseTerminalTab.component.ts
+msgid "Could not start session log: {error}"
+msgstr "无法开始会话日志：{error}"
+
+#: tabby-terminal/src/api/baseTerminalTab.component.ts
+msgid "Could not rename session log: {error}"
+msgstr "无法重命名会话日志：{error}"
+
+#: tabby-terminal/src/api/baseTerminalTab.component.ts
+msgid "Save and open"
+msgstr "保存并打开"
+
+#: tabby-terminal/src/api/baseTerminalTab.component.ts
+msgid "Open folder"
+msgstr "打开文件夹"
 
 #: locale/tmp-html/tabby-terminal/src/components/terminalSettingsTab.component.html:217
 #: locale/tmp-html/tabby-terminal/src/components/terminalToolbar.component.html:23

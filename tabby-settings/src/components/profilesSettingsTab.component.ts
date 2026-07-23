@@ -73,6 +73,7 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
     connectionGroupSections: ConnectionGroupSection[] = []
     connectionProfileGroups: PartialProfileGroup<ProfileGroup>[] = []
     connectionDrafts: Record<string, string> = {}
+    connectionNameDrafts: Record<string, string> = {}
     Platform = Platform
     defaultSSHX11Display = this.hostApp.platform === Platform.Linux
         ? '/tmp/.X11-unix/X0'
@@ -324,7 +325,7 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
 
         const profiles = this.getBaseConnectionProfiles()
             .filter(profile => this.isProfileVisible(profile))
-            .sort((a, b) => a.name.localeCompare(b.name))
+            .sort((a, b) => this.compareConnectionProfiles(a, b))
 
         this.connectionGroupSections = visibleGroups.map(group => ({
             id: group.id,
@@ -335,6 +336,9 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
         for (const section of this.connectionGroupSections) {
             if (!this.connectionDrafts[section.id]) {
                 this.connectionDrafts[section.id] = ''
+            }
+            if (!this.connectionNameDrafts[section.id]) {
+                this.connectionNameDrafts[section.id] = ''
             }
         }
     }
@@ -347,15 +351,25 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
         this.connectionDrafts[groupId] = value
     }
 
+    getConnectionNameDraft (groupId: string): string {
+        return this.connectionNameDrafts[groupId] ?? ''
+    }
+
+    setConnectionNameDraft (groupId: string, value: string): void {
+        this.connectionNameDrafts[groupId] = value
+    }
+
     async saveConnectionDraft (groupId: string): Promise<void> {
         const raw = this.connectionDrafts[groupId]?.trim()
         if (!raw) {
             return
         }
-        if (!await this.createConnectionProfileFromRaw(this.detectConnectionType(raw), raw, groupId)) {
+        const name = this.connectionNameDrafts[groupId]?.trim()
+        if (!await this.createConnectionProfileFromRaw(this.detectConnectionType(raw), raw, groupId, name)) {
             return
         }
         this.connectionDrafts[groupId] = ''
+        this.connectionNameDrafts[groupId] = ''
         await this.refreshProfiles()
         this.refreshConnectionGroupSections()
     }
@@ -597,30 +611,49 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
         let host = query.trim()
         let port = 22
         if (!host) {
-            return { host: '', port: 22 }
+            throw new Error('SSH host is empty')
         }
         if (host.includes('@')) {
             const parts = host.split(/@/g)
             host = parts[parts.length - 1]
             user = parts.slice(0, parts.length - 1).join('@')
+            if (!user || !host) {
+                throw new Error('Invalid SSH address')
+            }
         }
-        if (host.includes('[')) {
-            port = parseInt(host.split(']')[1].substring(1), 10)
-            host = host.split(']')[0].substring(1)
+        if (host.startsWith('[')) {
+            const match = /^\[([^\]]+)\](?::(\d+))?$/.exec(host)
+            if (!match) {
+                throw new Error('Invalid SSH IPv6 address')
+            }
+            host = match[1]
+            if (match[2]) {
+                port = this.parseNetworkPort(match[2])
+            }
+        } else if ((host.match(/:/g) ?? []).length === 1) {
+            const match = /^(.+):(\d+)$/.exec(host)
+            if (!match) {
+                throw new Error('Invalid SSH port')
+            }
+            host = match[1]
+            port = this.parseNetworkPort(match[2])
         } else if (host.includes(':')) {
-            port = parseInt(host.split(/:/g).pop()!, 10)
-            host = host.substring(0, host.lastIndexOf(':'))
+            if (!this.isValidIPv6(host)) {
+                throw new Error('IPv6 addresses with a port must use brackets')
+            }
         }
-        if (!port || Number.isNaN(port)) {
-            port = 22
-        }
+        this.validateNetworkHost(host, true)
         return { user, host, port }
     }
 
     private applyConnectionRaw (profile: PartialProfile<Profile>, raw: string): void {
         profile.options ??= {}
         if (profile.type === 'serial') {
-            profile.options.port = raw.trim()
+            const port = raw.trim()
+            if (!/^COM[1-9]\d*$/i.test(port) && !/^\/dev\/tty[\w.-]+$/i.test(port)) {
+                throw new Error(`Invalid serial port: ${port}`)
+            }
+            profile.options.port = port
         } else if (profile.type === 'ssh') {
             const { user, host, port } = this.parseSSHConnection(raw)
             profile.options.host = host
@@ -637,9 +670,56 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
             if (!parsed?.options?.host || parsed.options.port === null || parsed.options.port === undefined) {
                 throw new Error(`Connection provider for ${profile.type} returned an invalid address`)
             }
+            this.validateNetworkHost(String(parsed.options.host))
+            this.parseNetworkPort(String(parsed.options.port))
             profile.options.host = parsed.options.host
             profile.options.port = parsed.options.port
         }
+    }
+
+    private parseNetworkPort (value: string): number {
+        if (!/^\d+$/.test(value)) {
+            throw new Error(`Invalid port: ${value}`)
+        }
+        const port = Number(value)
+        if (!Number.isInteger(port) || port < 1 || port > 65535) {
+            throw new Error(`Invalid port: ${value}`)
+        }
+        return port
+    }
+
+    private validateNetworkHost (value: string, allowIPv6 = false): void {
+        const host = value.trim()
+        if (!host) {
+            throw new Error('Host is empty')
+        }
+        if (/\s|[/?#\[\]]/.test(host)) {
+            throw new Error(`Invalid host: ${host}`)
+        }
+        if (this.isValidIPv4(host)) {
+            return
+        }
+        if (allowIPv6 && this.isValidIPv6(host)) {
+            return
+        }
+        throw new Error(allowIPv6 ? `Host must be a valid IPv4 or IPv6 address: ${host}` : `Host must be a valid IPv4 address: ${host}`)
+    }
+
+    private isValidIPv4 (value: string): boolean {
+        const parts = value.split('.')
+        return parts.length === 4 && parts.every(part => /^\d{1,3}$/.test(part) && Number(part) <= 255)
+    }
+
+    private isValidIPv6 (value: string): boolean {
+        const halves = value.split('::')
+        if (halves.length > 2) {
+            return false
+        }
+        const parts = halves.flatMap(half => half ? half.split(':') : [])
+        if (!parts.every(part => /^[0-9a-f]{1,4}$/i.test(part))) {
+            return false
+        }
+        return halves.length === 2 ? parts.length < 8 : parts.length === 8
     }
 
     private tryApplyConnectionRaw (profile: PartialProfile<Profile>, raw: string): boolean {
@@ -654,7 +734,7 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
         }
     }
 
-    private async createConnectionProfileFromRaw (type: string, raw: string, groupId: string): Promise<boolean> {
+    private async createConnectionProfileFromRaw (type: string, raw: string, groupId: string, name?: string): Promise<boolean> {
         const profiles = await this.profilesService.getProfiles()
         let base = profiles.find(x => x.type === type && x.isTemplate)
         if (!base) {
@@ -670,14 +750,16 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
         profile.isBuiltin = false
         profile.isTemplate = false
         profile.group = groupId === 'ungrouped' ? '' : groupId
+        const profileWithCreationTime = profile as PartialProfile<Profile> & { connectionCreatedAt?: number }
+        profileWithCreationTime.connectionCreatedAt = Date.now()
         profile.options ??= {}
         if (!this.tryApplyConnectionRaw(profile, raw)) {
             return false
         }
 
-        await this.profilesService.newProfile(profile)
         const cfgProxy = this.profilesService.getConfigProxyForProfile(profile)
-        profile.name = this.profilesService.providerForProfile(profile)?.getSuggestedName(cfgProxy) ?? profile.type
+        profile.name = name || (this.profilesService.providerForProfile(profile)?.getSuggestedName(cfgProxy) ?? profile.type)
+        await this.profilesService.newProfile(profile)
         if (profile.options.port !== null && profile.options.port !== undefined && profile.type !== 'serial') {
             profile.options.port = Number(profile.options.port)
         }
@@ -695,7 +777,7 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
         if (value.includes('@')) {
             return 'ssh'
         }
-        if (/^COM\d+$/i.test(value) || /^\\\\\.\\COM\d+$/i.test(value) || /^\/dev\/(tty|cu)/i.test(value)) {
+        if (/^COM\d+$/i.test(value) || /^\/dev\/tty/i.test(value)) {
             return 'serial'
         }
         return 'telnet'
@@ -768,8 +850,24 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
     }
 
     private getConnectionSortKey (profile: PartialProfile<Profile>): string {
+        if (!profile.group) {
+            return `0:${String(this.getConnectionProfileOrder(profile)).padStart(8, '0')}`
+        }
         const groupName = profile.group ? this.profilesService.resolveProfileGroupName(profile.group) : ''
-        return `${profile.group ? '1' : '0'}:${groupName}:${profile.name}`
+        return `1:${groupName}:${profile.name}`
+    }
+
+    private compareConnectionProfiles (a: PartialProfile<Profile>, b: PartialProfile<Profile>): number {
+        return this.getConnectionSortKey(a).localeCompare(this.getConnectionSortKey(b))
+    }
+
+    private getConnectionProfileOrder (profile: PartialProfile<Profile>): number {
+        const createdAt = (profile as PartialProfile<Profile> & { connectionCreatedAt?: number }).connectionCreatedAt
+        if (typeof createdAt === 'number') {
+            return createdAt
+        }
+        const index = this.customProfiles.indexOf(profile)
+        return index === -1 ? Number.MAX_SAFE_INTEGER : index
     }
 
     async newProfile (base?: PartialProfile<Profile>): Promise<void> {

@@ -1,5 +1,12 @@
 import { Component, HostBinding } from '@angular/core'
+import { marker as _ } from '@biesbjerg/ngx-translate-extract-marker'
 import { ConfigService, HostAppService, Platform, PlatformService, altKeyName, metaKeyName } from 'tabby-core'
+
+_('Record session logs by default')
+_('Start recording automatically when a connection opens')
+_('Log file name format')
+_('Available values:')
+_('Log file extension')
 
 /** @hidden */
 @Component({

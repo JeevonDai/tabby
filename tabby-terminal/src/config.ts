@@ -65,8 +65,11 @@ export class TerminalConfigProvider extends ConfigProvider {
             replaceNewlinesWithSpacesOnPaste: false,
             trimWhitespaceOnPaste: true,
             sessionLog: {
-                timestampFormat: '[{YYYY}-{MM}-{DD} {HH}:{mm}:{ss}.{SSS}] ',
+                autoStart: true,
+                timestampFormat: '{YYYY}-{MM}-{DD}_{HH}-{mm}-{ss}',
                 directory: '',
+                filenameTemplate: '{{group}}-{{connection}}-{{timestamp}}.{{extension}}',
+                fileExtension: 'log',
             },
         },
     }

@@ -151,7 +151,7 @@ export class TerminalHotkeyProvider extends HotkeyProvider {
         },
         {
             id: 'open-session-log',
-            name: this.translate.instant('Open session log file in folder'),
+            name: this.translate.instant('Open session log file'),
         },
     ]
 

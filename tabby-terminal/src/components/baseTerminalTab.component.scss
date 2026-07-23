@@ -57,6 +57,23 @@
         background: #00ff0026;
     }
 
+    > .session-log-file {
+        position: absolute;
+        right: 5px;
+        bottom: 5px;
+        z-index: 4;
+        background: #00000047;
+        height: 28px;
+    }
+
+    > .session-log-file {
+        right: 48px;
+        max-width: min(calc(100% - 100px), 360px);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
     > .toolbar-pin-button {
         position: absolute;
         right: 34px;

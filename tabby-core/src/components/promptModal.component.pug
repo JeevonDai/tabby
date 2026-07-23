@@ -14,6 +14,12 @@
             [(ngModel)]='remember',
             text='Remember'
         )
+        button.btn.btn-secondary.me-2(
+            *ngIf='secondaryLabel',
+            (click)='secondary()',
+        ) {{secondaryLabel}}
         button.btn.btn-primary.ms-auto(
             (click)='ok()',
-        ) OK
+        )
+            span(*ngIf='okLabel') {{okLabel}}
+            span(*ngIf='!okLabel', translate) OK

@@ -218,6 +218,15 @@ div.mt-4
 
     .form-line
         .header
+            .title {{ "Record session logs by default" | translate }}
+            .description {{ "Start recording automatically when a connection opens" | translate }}
+        toggle(
+            [(ngModel)]='config.store.terminal.sessionLog.autoStart',
+            (ngModelChange)='config.save()',
+        )
+
+    .form-line
+        .header
             .title(translate) Timestamp format
             .description(translate) Use YYYY, MM, DD, HH, mm, ss, and SSS wrapped in curly braces as placeholders
         input.form-control(
@@ -237,6 +246,28 @@ div.mt-4
             [(ngModel)]='config.store.terminal.sessionLog.directory',
             (ngModelChange)='config.save()',
         )
+
+    .form-line
+        .header
+            .title {{ "Log file name format" | translate }}
+            .description
+                span {{ "Available values:" | translate }}
+                |  {{ '{{group}}' }}, {{ '{{connection}}' }}, {{ '{{timestamp}}' }}, {{ '{{extension}}' }}
+        input.form-control(
+            type='text',
+            [(ngModel)]='config.store.terminal.sessionLog.filenameTemplate',
+            (ngModelChange)='config.save()',
+        )
+
+    .form-line
+        .header
+            .title {{ "Log file extension" | translate }}
+        select.form-control(
+            [(ngModel)]='config.store.terminal.sessionLog.fileExtension',
+            (ngModelChange)='config.save()',
+        )
+            option(value='log') .log
+            option(value='txt') .txt
 
 .mt-4
     h3(translate) Startup

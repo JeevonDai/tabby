@@ -4,7 +4,8 @@ import { Spinner } from 'cli-spinner'
 import colors from 'ansi-colors'
 import { NgZone, OnInit, OnDestroy, Injector, ViewChild, HostBinding, Input, ElementRef, InjectFlags, Component } from '@angular/core'
 import { trigger, transition, style, animate, AnimationTriggerMetadata } from '@angular/animations'
-import { AppService, ConfigService, BaseTabComponent, HostAppService, HotkeysService, NotificationsService, Platform, LogService, Logger, TabContextMenuItemProvider, SplitTabComponent, SubscriptionContainer, MenuItemOptions, PlatformService, HostWindowService, ResettableTimeout, TranslateService, ThemesService, FullyDefined } from 'tabby-core'
+import { NgbModal } from '@ng-bootstrap/ng-bootstrap'
+import { AppService, ConfigService, BaseTabComponent, HostAppService, HotkeysService, NotificationsService, Platform, LogService, Logger, TabContextMenuItemProvider, SplitTabComponent, SubscriptionContainer, MenuItemOptions, PlatformService, HostWindowService, ResettableTimeout, TranslateService, ThemesService, FullyDefined, PromptModalComponent, ProfilesService } from 'tabby-core'
 
 import { BaseSession } from '../session'
 
@@ -15,7 +16,7 @@ import { TerminalDecorator } from './decorator'
 import { SearchPanelComponent } from '../components/searchPanel.component'
 import { MultifocusService } from '../services/multifocus.service'
 import { getTerminalBackgroundColor } from '../helpers'
-import { TerminalSessionLog, sanitizeLogFilename } from '../terminalSessionLog'
+import { TerminalSessionLog, formatTimestamp, sanitizeLogFilename } from '../terminalSessionLog'
 
 
 const INACTIVE_TAB_UNLOAD_DELAY = 1000 * 30
@@ -131,6 +132,7 @@ export class BaseTerminalTabComponent<P extends BaseTerminalProfile> extends Bas
     protected translate: TranslateService
     protected multifocus: MultifocusService
     protected themes: ThemesService
+    protected terminalProfilesService: ProfilesService
     // Deps end
 
     protected logger: Logger
@@ -212,6 +214,7 @@ export class BaseTerminalTabComponent<P extends BaseTerminalProfile> extends Bas
         this.translate = injector.get(TranslateService)
         this.multifocus = injector.get(MultifocusService)
         this.themes = injector.get(ThemesService)
+        this.terminalProfilesService = injector.get(ProfilesService)
 
         this.logger = this.log.create('baseTerminalTab')
         this.setTitle(this.translate.instant('Terminal'))
@@ -483,6 +486,7 @@ export class BaseTerminalTabComponent<P extends BaseTerminalProfile> extends Bas
 
         if (this.frontend instanceof XTermFrontend) {
             this.sessionLog = new TerminalSessionLog(this.frontend.xterm)
+            this.maybeStartSessionLog()
         }
     }
 
@@ -781,6 +785,9 @@ export class BaseTerminalTabComponent<P extends BaseTerminalProfile> extends Bas
     }
 
     setSession (session: BaseSession|null, destroyOnSessionClose = false): void {
+        if (this.isSessionLogActive) {
+            this.stopSessionLog()
+        }
         if (session) {
             if (this.session) {
                 this.setSession(null)
@@ -793,6 +800,7 @@ export class BaseTerminalTabComponent<P extends BaseTerminalProfile> extends Bas
             this.session = null
         }
         this.sessionChanged.next(session)
+        this.maybeStartSessionLog()
     }
 
     get isSessionLogActive (): boolean {
@@ -803,6 +811,10 @@ export class BaseTerminalTabComponent<P extends BaseTerminalProfile> extends Bas
         return this.isSessionLogActive
             ? this.translate.instant('Recording session log')
             : this.translate.instant('Start session log')
+    }
+
+    get sessionLogFileName (): string|null {
+        return this.sessionLogFilePath ? path.basename(this.sessionLogFilePath) : null
     }
 
     getExportContent (): string {
@@ -821,15 +833,25 @@ export class BaseTerminalTabComponent<P extends BaseTerminalProfile> extends Bas
     }
 
     startSessionLog (): void {
+        if (this.isSessionLogActive) {
+            return
+        }
+        if (this.hostApp.platform === Platform.Web) {
+            return
+        }
         if (!this.sessionLog) {
             this.notifications.error(this.translate.instant('Session log is not available'))
             return
         }
         const filePath = this.buildSessionLogFilePath()
         const format = this.config.store.terminal.sessionLog?.timestampFormat ?? '[{YYYY}-{MM}-{DD} {HH}:{mm}:{ss}.{SSS}] '
-        this.sessionLog.start(filePath, format)
-        this.sessionLogFilePath = filePath
-        this.notifications.info(this.translate.instant('Session log started: {path}', { path: filePath }))
+        try {
+            this.sessionLog.start(filePath, format)
+            this.sessionLogFilePath = filePath
+            this.notifications.info(this.translate.instant('Session log started: {path}', { path: filePath }))
+        } catch (error) {
+            this.notifications.error(this.translate.instant('Could not start session log: {error}', { error: String(error) }))
+        }
     }
 
     stopSessionLog (): void {
@@ -847,7 +869,52 @@ export class BaseTerminalTabComponent<P extends BaseTerminalProfile> extends Bas
             this.notifications.info(this.translate.instant('No session log file. Start session log first.'))
             return
         }
-        this.platform.showItemInFolder(this.sessionLogFilePath)
+        this.platform.openPath(this.sessionLogFilePath)
+    }
+
+    async renameSessionLogFile (event?: MouseEvent): Promise<void> {
+        event?.preventDefault()
+        event?.stopPropagation()
+        if (!this.sessionLog?.active || !this.sessionLogFilePath) {
+            return
+        }
+        const modal = this.injector.get(NgbModal).open(PromptModalComponent)
+        modal.componentInstance.prompt = this.translate.instant('Log file name')
+        modal.componentInstance.value = path.basename(this.sessionLogFilePath)
+        modal.componentInstance.okLabel = this.translate.instant('Save and open')
+        modal.componentInstance.secondaryLabel = this.translate.instant('Open folder')
+        const result = await modal.result.catch(() => null)
+        const name = result?.value?.trim()
+        if (!name) {
+            return
+        }
+
+        const currentPath = this.sessionLogFilePath
+        const extension = path.extname(currentPath)
+        let filename = sanitizeLogFilename(name)
+        if (!path.extname(filename)) {
+            filename += extension
+        }
+        const newPath = path.join(path.dirname(currentPath), filename)
+        try {
+            if (newPath !== currentPath) {
+                this.sessionLog.rename(newPath)
+                this.sessionLogFilePath = newPath
+            }
+            if (result.action === 'secondary') {
+                this.platform.showItemInFolder(newPath)
+            } else {
+                this.platform.openPath(newPath)
+            }
+        } catch (error) {
+            this.notifications.error(this.translate.instant('Could not rename session log: {error}', { error: String(error) }))
+        }
+    }
+
+    private maybeStartSessionLog (): void {
+        if (this.hostApp.platform !== Platform.Web && this.session && this.sessionLog && this.config.store.terminal.sessionLog?.autoStart !== false) {
+            this.startSessionLog()
+        }
     }
 
     private buildSessionLogFilePath (): string {
@@ -859,9 +926,22 @@ export class BaseTerminalTabComponent<P extends BaseTerminalProfile> extends Bas
                 ? path.join(path.dirname(configPath), 'session-logs')
                 : 'session-logs'
         }
-        const stamp = new Date().toISOString().replace(/[:.]/g, '-')
-        const name = sanitizeLogFilename(this.customTitle || this.title || this.profile.name || 'terminal')
-        return path.join(logDir, `${name}-${stamp}.log`)
+        const timestampFormat = this.config.store.terminal.sessionLog?.timestampFormat
+            || '{YYYY}-{MM}-{DD}_{HH}-{mm}-{ss}'
+        const timestamp = formatTimestamp(new Date(), timestampFormat)
+        const group = this.profile.group ? this.terminalProfilesService.resolveProfileGroupName(this.profile.group) : ''
+        const connection = this.profile.name || this.customTitle || this.title || 'terminal'
+        const extension = this.config.store.terminal.sessionLog?.fileExtension === 'txt' ? 'txt' : 'log'
+        const template = this.config.store.terminal.sessionLog?.filenameTemplate
+            || '{{group}}-{{connection}}-{{timestamp}}.{{extension}}'
+        const values: Record<string, string> = { group, connection, timestamp, extension }
+        let filename = sanitizeLogFilename(template.replace(/\{\{\s*(group|connection|timestamp|extension)\s*\}\}/g, (_, key: string) => values[key]))
+            .replace(/^[-_.\s]+/, '')
+        const suffix = `.${extension}`
+        if (!filename.toLowerCase().endsWith(suffix)) {
+            filename = `${filename.substring(0, 80 - suffix.length).replace(/[.\s]+$/, '')}${suffix}`
+        }
+        return path.join(logDir, filename)
     }
 
     showToolbar (): void {

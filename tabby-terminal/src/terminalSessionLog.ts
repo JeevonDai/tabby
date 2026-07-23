@@ -70,6 +70,14 @@ export class TerminalSessionLog {
         this.lastLoggedAbsoluteY = -1
     }
 
+    rename (newFilePath: string): void {
+        if (!this.filePath) {
+            throw new Error('Session log is not active')
+        }
+        fs.renameSync(this.filePath, newFilePath)
+        this.filePath = newFilePath
+    }
+
     scan (): void {
         if (!this.recording || !this.filePath) {
             return

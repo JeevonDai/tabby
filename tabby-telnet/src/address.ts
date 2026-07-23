@@ -13,6 +13,23 @@ function parsePort (value: string|number): number {
     return port
 }
 
+function validateHost (value: string): void {
+    if (!value) {
+        throw new Error('Telnet host is empty')
+    }
+    if (/\s|[/?#\[\]]/.test(value)) {
+        throw new Error(`Invalid Telnet host: ${value}`)
+    }
+    if (!isValidIPv4(value)) {
+        throw new Error(`Telnet host must be a valid IPv4 address: ${value}`)
+    }
+}
+
+function isValidIPv4 (value: string): boolean {
+    const parts = value.split('.')
+    return parts.length === 4 && parts.every(part => /^\d{1,3}$/.test(part) && Number(part) <= 255)
+}
+
 export function parseTelnetAddress (
     hostValue: string|null|undefined,
     portValue: number|null|undefined = DEFAULT_TELNET_PORT,
@@ -42,24 +59,26 @@ export function parseTelnetAddress (
             const [, parsedHost, parsedPort] = whitespacePort
             value = parsedHost
             port = parsePort(parsedPort)
-        } else if ((value.match(/:/g) ?? []).length === 1) {
-            const hostPort = /^(.+):\s*(\d+)$/.exec(value)
-            if (hostPort) {
-                const [, parsedHost, parsedPort] = hostPort
+        } else {
+            const slashPort = /^(.+)\/\s*(\d+)$/.exec(value)
+            if (slashPort) {
+                const [, parsedHost, parsedPort] = slashPort
                 value = parsedHost.trim()
                 port = parsePort(parsedPort)
-            } else {
-                throw new Error(`Invalid Telnet port in address: ${value}`)
+            } else if ((value.match(/:/g) ?? []).length === 1) {
+                const hostPort = /^(.+):\s*(\d+)$/.exec(value)
+                if (hostPort) {
+                    const [, parsedHost, parsedPort] = hostPort
+                    value = parsedHost.trim()
+                    port = parsePort(parsedPort)
+                } else {
+                    throw new Error(`Invalid Telnet port in address: ${value}`)
+                }
             }
         }
     }
 
-    if (!value) {
-        throw new Error('Telnet host is empty')
-    }
-    if (/\s|[/?#\[\]]/.test(value)) {
-        throw new Error(`Invalid Telnet host: ${value}`)
-    }
+    validateHost(value)
 
     return { host: value, port }
 }
