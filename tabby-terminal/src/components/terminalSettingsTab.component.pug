@@ -231,7 +231,7 @@ div.mt-4
             .description(translate) Use YYYY, MM, DD, HH, mm, ss, and SSS wrapped in curly braces as placeholders
         input.form-control(
             type='text',
-            placeholder='[{YYYY}-{MM}-{DD} {HH}:{mm}:{ss}.{SSS}] ',
+            placeholder='[{YYYY}-{MM}-{DD} {HH}:{mm}:{ss}.{SSS}]',
             [(ngModel)]='config.store.terminal.sessionLog.timestampFormat',
             (ngModelChange)='config.save()',
         )

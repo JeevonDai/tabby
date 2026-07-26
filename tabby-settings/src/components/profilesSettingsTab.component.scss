@@ -19,9 +19,11 @@ profile-icon {
     background-color: var(--theme-bg-less-2);
 }
 
+$connection-column-min-width: 520px;
+
 .connection-profile-table {
     table {
-        min-width: 520px;
+        min-width: $connection-column-min-width;
     }
 
     .btn-link {
@@ -53,8 +55,13 @@ profile-icon {
 }
 
 .connections-grouped-view {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 32rem), 1fr));
+    gap: 1rem;
+    align-items: start;
+
     .connection-group-section {
-        margin-bottom: 1rem;
+        min-width: 0;
     }
 
     .connection-group-header {
@@ -108,17 +115,46 @@ profile-icon {
     }
 }
 
-.connection-group-filter {
-    max-width: 16rem;
+.connections-toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+    width: $connection-column-min-width;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    gap: 0.5rem;
+    align-items: center;
+
+    > .input-group {
+        width: 100%;
+        min-width: 0;
+    }
+
+    > .connection-group-filter {
+        width: 100%;
+        max-width: none;
+        min-width: 0;
+    }
 
     > .btn {
-        max-width: 16rem;
+        width: 100%;
+        min-width: 0;
+        white-space: nowrap;
+    }
+}
+
+.connection-group-filter {
+    > .btn {
+        width: 100%;
+        max-width: 100%;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
     }
 
     .dropdown-menu {
+        width: 100%;
+        min-width: 100%;
         max-height: min(36rem, calc(100vh - 12rem));
         overflow-y: auto;
     }

@@ -21,8 +21,7 @@ hotkeys:
     - 'Ctrl-Shift-PageUp'
   move-tab-right:
     - 'Ctrl-Shift-PageDown'
-  rearrange-panes:
-    - 'Ctrl-Shift'
+  rearrange-panes: []
   duplicate-tab: []
   pin-tab: []
   restart-tab: []

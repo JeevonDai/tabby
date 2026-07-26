@@ -2777,3 +2777,27 @@ msgstr "无法编辑配置：连接插件 \"{type}\" 不可用"
 #: tabby-telnet/src/components/telnetSettingsTab.component.pug:1
 msgid "Telnet"
 msgstr "Telnet"
+
+#: tabby-core/src/hotkeys.ts:24
+msgid "Toggle light/dark color scheme"
+msgstr "切换浅色/深色配色方案"
+
+#: tabby-core/src/hotkeys.ts:68
+msgid "Pin or unpin tab"
+msgstr "固定或取消固定标签页"
+
+#: locale/tmp-html/tabby-terminal/src/components/terminalSettingsTab.component.html:307
+msgid "Refresh environment variables from registry"
+msgstr "从注册表刷新环境变量"
+
+#: locale/tmp-html/tabby-terminal/src/components/terminalSettingsTab.component.html:308
+msgid "Reload PATH and other variables from the Windows registry for each new session"
+msgstr "每次新建会话时，从 Windows 注册表重新加载 PATH 和其他环境变量"
+
+#: tabby-core/src/hotkeys.ts:288
+msgid "Show profile selector for group {name}"
+msgstr "显示分组 {name} 的配置选择器"
+
+#: locale/tmp-html/tabby-settings/src/components/profilesSettingsTab.component.html:60
+msgid "New group"
+msgstr "新建分组"

@@ -110,43 +110,43 @@ ul.nav-tabs(ngbNav, #nav='ngbNav', [(activeId)]='activeProfilesSubTab')
         a(ngbNavLink, translate) Connections
         ng-template(ngbNavContent)
             .connections-tab-pane
-                .d-flex.mb-2.align-items-center.gap-2
-                    .input-group
-                        .input-group-text
-                            i.fas.fa-fw.fa-search
-                        input.form-control(type='search', [placeholder]='"Filter"|translate', [(ngModel)]='filter', (ngModelChange)='refreshConnectionGroupSections()')
-
-                    .dropdown.flex-shrink-0.connection-group-filter(
-                        ngbDropdown,
-                        [autoClose]='"outside"'
-                    )
-                        button.btn.btn-outline-secondary.dropdown-toggle(
-                            type='button',
-                            ngbDropdownToggle,
-                            [title]='getConnectionGroupFilterLabel()'
-                        ) {{getConnectionGroupFilterLabel()}}
-                        .dropdown-menu(ngbDropdownMenu)
-                            label.dropdown-item.d-flex.align-items-center.gap-2
-                                input.form-check-input.mt-0(
-                                    type='checkbox',
-                                    [checked]='isAllConnectionGroupsSelected()',
-                                    (change)='toggleAllConnectionGroups($any($event.target).checked)'
-                                )
-                                span(translate) All groups
-                            .dropdown-divider
-                            label.dropdown-item.d-flex.align-items-center.gap-2(*ngFor='let group of connectionProfileGroups')
-                                input.form-check-input.mt-0(
-                                    type='checkbox',
-                                    [checked]='isConnectionGroupSelected(group.id)',
-                                    (change)='toggleConnectionGroup(group.id, $any($event.target).checked)'
-                                )
-                                span {{group.name}}
-
-                    button.btn.btn-outline-secondary.flex-shrink-0((click)='newConnectionProfileGroup()')
-                        i.fas.fa-fw.fa-folder-plus
-                        span(translate) New profile Group
-
                 .connections-grouped-view(*ngIf='connectionGroupSections.length > 0', cdkDropListGroup)
+                    .connections-toolbar
+                        .input-group
+                            .input-group-text
+                                i.fas.fa-fw.fa-search
+                            input.form-control(type='search', [placeholder]='"Filter"|translate', [(ngModel)]='filter', (ngModelChange)='refreshConnectionGroupSections()')
+
+                        .dropdown.flex-shrink-0.connection-group-filter(
+                            ngbDropdown,
+                            [autoClose]='"outside"'
+                        )
+                            button.btn.btn-outline-secondary.dropdown-toggle(
+                                type='button',
+                                ngbDropdownToggle,
+                                [title]='getConnectionGroupFilterLabel()'
+                            ) {{getConnectionGroupFilterLabel()}}
+                            .dropdown-menu(ngbDropdownMenu)
+                                label.dropdown-item.d-flex.align-items-center.gap-2
+                                    input.form-check-input.mt-0(
+                                        type='checkbox',
+                                        [checked]='isAllConnectionGroupsSelected()',
+                                        (change)='toggleAllConnectionGroups($any($event.target).checked)'
+                                    )
+                                    span(translate) All groups
+                                .dropdown-divider
+                                label.dropdown-item.d-flex.align-items-center.gap-2(*ngFor='let group of connectionProfileGroups')
+                                    input.form-check-input.mt-0(
+                                        type='checkbox',
+                                        [checked]='isConnectionGroupSelected(group.id)',
+                                        (change)='toggleConnectionGroup(group.id, $any($event.target).checked)'
+                                    )
+                                    span {{group.name}}
+
+                        button.btn.btn-outline-secondary.flex-shrink-0((click)='newConnectionProfileGroup()')
+                            i.fas.fa-fw.fa-folder-plus
+                            span(translate) New group
+
                     .connection-group-section(*ngFor='let section of connectionGroupSections')
                             .connection-group-header
                                 span([style.color]='section.textColor') {{section.name}}

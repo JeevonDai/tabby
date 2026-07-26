@@ -36,7 +36,7 @@ export function cleanLineForLog (text: string): string {
 
 export class TerminalSessionLog {
     private filePath: string | null = null
-    private timestampFormat = '[{YYYY}-{MM}-{DD} {HH}:{mm}:{ss}.{SSS}] '
+    private timestampFormat = '[{YYYY}-{MM}-{DD} {HH}:{mm}:{ss}.{SSS}]'
     private recording = false
     private lastLoggedAbsoluteY = -1
     private writeParsedDisposable: IDisposable | null = null
@@ -118,6 +118,6 @@ export class TerminalSessionLog {
 
     private appendLog (text: string): void {
         const timestamp = formatTimestamp(new Date(), this.timestampFormat)
-        fs.appendFileSync(this.filePath!, `${timestamp}${text}\n`, { encoding: 'utf8' })
+        fs.appendFileSync(this.filePath!, `${timestamp} ${text}\n`, { encoding: 'utf8' })
     }
 }
