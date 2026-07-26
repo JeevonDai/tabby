@@ -118,7 +118,13 @@
     "i18n:pull": "crowdin pull --skip-untranslated-strings",
     "i18n:extract": "node scripts/i18n-extract.mjs",
     "i18n:push": "crowdin push",
-    "deploy:plugins": "powershell -ExecutionPolicy Bypass -File scripts/deploy-plugins.ps1"
+    "deploy:plugins": "powershell -ExecutionPolicy Bypass -File scripts/deploy-plugins.ps1",
+    "deploy:plugins:unix": "bash scripts/deploy-plugins.sh",
+    "build:custom-plugins": "node scripts/build-custom-plugins.mjs",
+    "prepackage:custom-plugins": "node scripts/prepackage-custom-plugins.mjs",
+    "prepare:custom-plugins": "npm run build:custom-plugins && npm run prepackage:custom-plugins",
+    "package:custom:mac": "npm run build && node scripts/build-native.mjs && node scripts/prepackage-plugins.mjs && npm run prepare:custom-plugins && node scripts/build-macos.mjs",
+    "package:custom:windows": "npm run build && node scripts/build-native.mjs && node scripts/prepackage-plugins.mjs && npm run prepare:custom-plugins && node scripts/build-windows.mjs"
   },
   "type": "module",
   "private": true,

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
 import { build as builder } from 'electron-builder'
+import { execFileSync } from 'node:child_process'
 import * as vars from './vars.mjs'
 
 const isTag = (process.env.GITHUB_REF || '').startsWith('refs/tags/')
@@ -16,6 +17,16 @@ if (process.env.GITHUB_HEAD_REF) {
 process.env.APPLE_ID ??= process.env.APPSTORE_USERNAME
 process.env.APPLE_APP_SPECIFIC_PASSWORD ??= process.env.APPSTORE_PASSWORD
 
+function adHocSign (options) {
+    execFileSync('/usr/bin/codesign', [
+        '--force',
+        '--deep',
+        '--sign', '-',
+        '--timestamp=none',
+        options.app,
+    ], { stdio: 'inherit' })
+}
+
 builder({
     dir: true,
     mac: ['dmg', 'zip'],
@@ -28,7 +39,8 @@ builder({
         },
         forceCodeSigning: !!process.env.CSC_LINK,
         mac: {
-            identity: !process.env.CI || process.env.CSC_LINK ? undefined : null,
+            identity: undefined,
+            sign: process.env.CSC_LINK ? undefined : adHocSign,
             notarize: !!process.env.APPLE_TEAM_ID,
         },
         npmRebuild: process.env.ARCH !== 'arm64',
