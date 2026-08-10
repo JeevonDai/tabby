@@ -457,7 +457,23 @@ export class XTermFrontend extends Frontend {
     }
 
     focus (): void {
-        setTimeout(() => this.xterm.focus())
+        setTimeout(() => {
+            const activeElement = document.activeElement
+            const terminalElement = this.xterm.element
+            const userFocusedEditor = activeElement instanceof HTMLElement
+                && !terminalElement?.contains(activeElement)
+                && (
+                    activeElement.matches('input, textarea, select, [contenteditable]:not([contenteditable="false"])')
+                    || activeElement.closest('.monaco-editor, [contenteditable]:not([contenteditable="false"])') !== null
+                )
+
+            // Window activation also emits a terminal focus request. If the
+            // activating click has already focused Monaco (or another editor),
+            // do not let this deferred request steal the caret back to xterm.
+            if (!userFocusedEditor) {
+                this.xterm.focus()
+            }
+        })
     }
 
     async write (data: string): Promise<void> {
