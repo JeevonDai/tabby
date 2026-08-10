@@ -153,8 +153,10 @@ $connection-column-min-width: 520px;
     }
 
     .dropdown-menu {
-        width: 100%;
-        min-width: 100%;
+        // Span the group selector and the adjacent "New group" column so
+        // long group names and larger group lists have room to breathe.
+        width: calc(200% + 0.5rem);
+        min-width: calc(200% + 0.5rem);
         max-height: min(36rem, calc(100vh - 12rem));
         overflow-y: auto;
     }

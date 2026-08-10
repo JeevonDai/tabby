@@ -110,7 +110,7 @@ ul.nav-tabs(ngbNav, #nav='ngbNav', [(activeId)]='activeProfilesSubTab')
         a(ngbNavLink, translate) Connections
         ng-template(ngbNavContent)
             .connections-tab-pane
-                .connections-grouped-view(*ngIf='connectionGroupSections.length > 0', cdkDropListGroup)
+                .connections-grouped-view(*ngIf='connectionProfileGroups.length > 0', cdkDropListGroup)
                     .connections-toolbar
                         .input-group
                             .input-group-text
@@ -147,7 +147,7 @@ ul.nav-tabs(ngbNav, #nav='ngbNav', [(activeId)]='activeProfilesSubTab')
                             i.fas.fa-fw.fa-folder-plus
                             span(translate) New group
 
-                    .connection-group-section(*ngFor='let section of connectionGroupSections')
+                    .connection-group-section(*ngFor='let section of connectionGroupSections; trackBy: trackConnectionGroupSection')
                             .connection-group-header
                                 span([style.color]='section.textColor') {{section.name}}
                                 .connection-group-actions
@@ -174,7 +174,7 @@ ul.nav-tabs(ngbNav, #nav='ngbNav', [(activeId)]='activeProfilesSubTab')
                                         (cdkDropListDropped)='onConnectionProfileDropped($event, section)'
                                     )
                                         tr.connection-profile-row(
-                                            *ngFor='let profile of section.profiles',
+                                            *ngFor='let profile of section.profiles; trackBy: trackConnectionProfile',
                                             cdkDrag,
                                             [cdkDragData]='profile',
                                             (contextmenu)='showConnectionProfileContextMenu($event, profile)'

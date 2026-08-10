@@ -37,7 +37,7 @@ export class HotkeysService {
      */
     get hotkey$ (): Observable<string> {
         return this._hotkey.pipe(filter(() => {
-            return document.querySelectorAll('input:focus').length === 0
+            return !this.isNativeTextEditingTarget(document.activeElement)
         }))
     }
 
@@ -95,6 +95,13 @@ export class HotkeysService {
             ) => {
                 document.addEventListener(eventType, event => {
                     if (filterEvent && !filterEvent(event)) {
+                        return
+                    }
+                    // Let the browser handle copy, paste and the other native
+                    // editing shortcuts while a settings field is active.
+                    // xterm's hidden textarea is intentionally excluded: its
+                    // keystrokes still need to go through Tabby's hotkeys.
+                    if (event instanceof KeyboardEvent && this.isNativeTextEditingTarget(event.target)) {
                         return
                     }
                     this._keyEvent.next(event)
@@ -348,6 +355,17 @@ export class HotkeysService {
                 this.addPressedKey(key, event)
             }
         }
+    }
+
+    private isNativeTextEditingTarget (target: EventTarget|null): boolean {
+        if (!(target instanceof HTMLElement)) {
+            return false
+        }
+        if (target.classList.contains('xterm-helper-textarea')) {
+            return false
+        }
+        return target.matches('input, textarea, select, [contenteditable]:not([contenteditable="false"])')
+            || target.closest('[contenteditable]:not([contenteditable="false"])') !== null
     }
 
     private emitHotkeyOn (hotkey: string) {

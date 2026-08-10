@@ -345,6 +345,14 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
         }
     }
 
+    trackConnectionGroupSection (_index: number, section: ConnectionGroupSection): string {
+        return section.id
+    }
+
+    trackConnectionProfile (index: number, profile: PartialProfile<Profile>): string|number {
+        return profile.id ?? index
+    }
+
     getConnectionDraft (groupId: string): string {
         return this.connectionDrafts[groupId] ?? ''
     }
