@@ -1,5 +1,6 @@
 import stripAnsi from 'strip-ansi'
 import { SerialPortStream } from '@serialport/stream'
+import { createServer, Server, Socket } from 'net'
 import { LogService, NotificationsService } from 'tabby-core'
 import { Subject, Observable } from 'rxjs'
 import { Injector, NgZone } from '@angular/core'
@@ -50,6 +51,17 @@ export class SerialSession extends BaseSession {
     private zone: NgZone
     private notifications: NotificationsService
     private serialService: SerialService
+    private shareServer: Server|null = null
+    private shareClients = new Set<Socket>()
+
+    get sharedPort (): number|null {
+        const address = this.shareServer?.address()
+        return address && typeof address !== 'string' ? address.port : null
+    }
+
+    get isSharing (): boolean {
+        return this.sharedPort !== null
+    }
 
     constructor (injector: Injector, public profile: SerialProfile) {
         super(injector.get(LogService).create(`serial-${profile.options.port}`))
@@ -122,7 +134,16 @@ export class SerialSession extends BaseSession {
         setTimeout(() => this.streamProcessor.start())
 
         serial.on('readable', () => {
-            this.emitOutput(serial.read())
+            const data = serial.read() as Buffer|null
+            if (!data) {
+                return
+            }
+            for (const client of this.shareClients) {
+                if (client.writable) {
+                    client.write(data)
+                }
+            }
+            this.emitOutput(data)
         })
 
         serial.on('end', () => {
@@ -140,8 +161,81 @@ export class SerialSession extends BaseSession {
     }
 
     async destroy (): Promise<void> {
+        await this.stopSharing()
         this.serviceMessage.complete()
         await super.destroy()
+    }
+
+    async startSharing (preferredPort = 1000): Promise<number> {
+        const port = Number(preferredPort)
+        if (!Number.isInteger(port) || port < 1 || port > 65535) {
+            throw new Error('Serial sharing port must be between 1 and 65535')
+        }
+
+        await this.stopSharing()
+        for (let candidate = port; candidate <= 65535; candidate++) {
+            try {
+                this.shareServer = await this.listen(candidate)
+                this.emitServiceMessage(`Serial port shared on 0.0.0.0:${candidate}`)
+                return candidate
+            } catch (error) {
+                if (!['EADDRINUSE', 'EACCES'].includes((error as NodeJS.ErrnoException).code ?? '')) {
+                    throw new Error(`Could not share serial port on 0.0.0.0:${candidate}: ${(error as Error).message}`)
+                }
+            }
+        }
+        throw new Error(`No available TCP port found from ${port} to 65535`)
+    }
+
+    async stopSharing (): Promise<void> {
+        for (const client of this.shareClients) {
+            client.destroy()
+        }
+        this.shareClients.clear()
+
+        const server = this.shareServer
+        this.shareServer = null
+        if (server?.listening) {
+            await new Promise<void>(resolve => server.close(() => resolve()))
+        }
+    }
+
+    private listen (port: number): Promise<Server> {
+        const server = createServer(client => {
+            client.setNoDelay(true)
+            this.shareClients.add(client)
+            this.emitServiceMessage(`Serial sharing client connected: ${client.remoteAddress}:${client.remotePort}`)
+
+            client.on('data', data => {
+                if (this.serial?.writable) {
+                    this.serial.write(data)
+                }
+            })
+            client.on('error', error => {
+                this.logger.warn('Serial sharing client error', error)
+            })
+            client.on('close', () => {
+                this.shareClients.delete(client)
+            })
+        })
+
+        return new Promise<Server>((resolve, reject) => {
+            const onError = (error: NodeJS.ErrnoException) => {
+                server.removeListener('listening', onListening)
+                reject(error)
+            }
+            const onListening = () => {
+                server.removeListener('error', onError)
+                server.on('error', error => {
+                    this.notifications.error(`Serial sharing error: ${error.message}`)
+                    this.logger.error('Serial sharing server error', error)
+                })
+                resolve(server)
+            }
+            server.once('error', onError)
+            server.once('listening', onListening)
+            server.listen(port, '0.0.0.0')
+        })
     }
 
     // eslint-disable-next-line @typescript-eslint/no-empty-function, @typescript-eslint/explicit-module-boundary-types, @typescript-eslint/no-empty-function

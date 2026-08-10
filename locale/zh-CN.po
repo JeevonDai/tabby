@@ -2801,3 +2801,34 @@ msgstr "显示分组 {name} 的配置选择器"
 #: locale/tmp-html/tabby-settings/src/components/profilesSettingsTab.component.html:60
 msgid "New group"
 msgstr "新建分组"
+#: tabby-serial/src/components/serialTab.component.pug:17
+msgid "Stop serial sharing"
+msgstr "停止串口共享"
+
+#: tabby-serial/src/components/serialTab.component.pug:17
+msgid "Start serial sharing"
+msgstr "开始串口共享"
+
+#: tabby-serial/src/components/serialTab.component.pug:20
+msgid "Sharing"
+msgstr "正在共享"
+
+#: tabby-serial/src/components/serialTab.component.pug:21
+msgid "Share"
+msgstr "共享"
+
+#: tabby-serial/src/components/serialTab.component.pug:26
+msgid "Change sharing port"
+msgstr "更改共享端口"
+
+#: tabby-serial/src/components/serialTab.component.ts:105
+msgid "Serial sharing port"
+msgstr "串口共享端口"
+
+#: tabby-serial/src/components/serialTab.component.ts:119
+msgid "Serial sharing started on port {port}"
+msgstr "已在端口 {port} 上启动串口共享"
+
+#: tabby-serial/src/components/serialTab.component.ts:120
+msgid "Port {requestedPort} is occupied. Serial sharing started on port {port}"
+msgstr "端口 {requestedPort} 已被占用，已在端口 {port} 上启动串口共享"

@@ -2,7 +2,8 @@
 import { marker as _ } from '@biesbjerg/ngx-translate-extract-marker'
 import colors from 'ansi-colors'
 import { Component, Injector } from '@angular/core'
-import { Platform, SelectorService } from 'tabby-core'
+import { NgbModal } from '@ng-bootstrap/ng-bootstrap'
+import { Platform, PromptModalComponent, SelectorService } from 'tabby-core'
 import { BaseTerminalTabComponent, ConnectableTerminalTabComponent } from 'tabby-terminal'
 import { SerialSession, BAUD_RATES, SerialProfile } from '../api'
 
@@ -16,11 +17,13 @@ import { SerialSession, BAUD_RATES, SerialProfile } from '../api'
 export class SerialTabComponent extends ConnectableTerminalTabComponent<SerialProfile> {
     session: SerialSession|null = null
     Platform = Platform
+    private sharingPort = 1000
 
     // eslint-disable-next-line @typescript-eslint/no-useless-constructor
     constructor (
         injector: Injector,
         private selector: SelectorService,
+        private ngbModal: NgbModal,
     ) {
         super(injector)
         this.enableToolbar = true
@@ -97,6 +100,44 @@ export class SerialTabComponent extends ConnectableTerminalTabComponent<SerialPr
         )
         this.session?.serial?.update({ baudRate: rate })
         this.profile.options.baudrate = rate
+    }
+
+    async toggleSharing () {
+        if (!this.session) {
+            return
+        }
+        if (this.session.isSharing) {
+            await this.session.stopSharing()
+            return
+        }
+        await this.configureSharingPort()
+    }
+
+    async configureSharingPort () {
+        if (!this.session) {
+            return
+        }
+        const modal = this.ngbModal.open(PromptModalComponent)
+        modal.componentInstance.prompt = this.translate.instant(_('Serial sharing port'))
+        modal.componentInstance.value = String(this.session.sharedPort ?? this.sharingPort)
+        const result = await modal.result.catch(() => null)
+        if (!result) {
+            return
+        }
+
+        const requestedPort = Number(result.value)
+        try {
+            const actualPort = await this.session.startSharing(requestedPort)
+            this.sharingPort = actualPort
+            this.notifications.info(this.translate.instant(
+                actualPort === requestedPort
+                    ? _('Serial sharing started on port {port}')
+                    : _('Port {requestedPort} is occupied. Serial sharing started on port {port}'),
+                { requestedPort, port: actualPort },
+            ))
+        } catch (error) {
+            this.notifications.error(error instanceof Error ? error.message : String(error))
+        }
     }
 
     protected isSessionExplicitlyTerminated (): boolean {
