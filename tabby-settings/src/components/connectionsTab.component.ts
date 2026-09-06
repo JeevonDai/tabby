@@ -5,7 +5,7 @@ import { BaseTabComponent, TranslateService } from 'tabby-core'
 /** @hidden */
 @Component({
     selector: 'connections-tab',
-    template: '<div class="connections-tab-body" tabindex="0" (wheel)="onWheel($event)"><profiles-settings-tab initialSubTab="connections"></profiles-settings-tab></div>',
+    template: '<div class="connections-tab-body" tabindex="0" [class.connections-layout-vertical]="connectionsLayout === \'vertical\'" (wheel)="onWheel($event)"><profiles-settings-tab initialSubTab="connections"></profiles-settings-tab></div>',
     styleUrls: ['./connectionsTab.component.scss'],
 })
 export class ConnectionsTabComponent extends BaseTabComponent {
@@ -18,7 +18,14 @@ export class ConnectionsTabComponent extends BaseTabComponent {
         this.icon = 'fas fa-network-wired'
     }
 
+    get connectionsLayout (): 'horizontal'|'vertical' {
+        return this.config.store.appearance?.connectionsLayout === 'vertical' ? 'vertical' : 'horizontal'
+    }
+
     onWheel (event: WheelEvent): void {
+        if (this.connectionsLayout === 'vertical') {
+            return
+        }
         const container = event.currentTarget as HTMLElement
         if (
             container.scrollWidth > container.clientWidth

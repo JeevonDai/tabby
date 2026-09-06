@@ -117,7 +117,7 @@ $connection-column-min-width: 520px;
 
 .connections-toolbar {
     display: grid;
-    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto minmax(0, 1fr);
     width: $connection-column-min-width;
     max-width: 100%;
     min-width: 0;
@@ -160,4 +160,8 @@ $connection-column-min-width: 520px;
         max-height: min(36rem, calc(100vh - 12rem));
         overflow-y: auto;
     }
+}
+
+.connection-layout-selector {
+    white-space: nowrap;
 }

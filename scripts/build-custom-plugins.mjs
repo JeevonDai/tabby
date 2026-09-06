@@ -10,6 +10,12 @@ const pluginRoot = path.resolve(
     process.env.TABBY_CUSTOM_PLUGINS_ROOT ?? path.join(tabbyRoot, '..'),
 )
 const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm'
+const spawnOptions = cwd => ({
+    cwd,
+    stdio: 'inherit',
+    // Windows cannot reliably execute npm.cmd directly through spawnSync.
+    shell: process.platform === 'win32',
+})
 const plugins = [
     'tabby-command-editor',
     'tabby-ssh-button-bar',
@@ -21,8 +27,7 @@ for (const plugin of plugins) {
 
     console.log(`Installing ${plugin} dependencies...`)
     let result = spawnSync(npm, ['ci', '--legacy-peer-deps'], {
-        cwd,
-        stdio: 'inherit',
+        ...spawnOptions(cwd),
     })
     if (result.status !== 0) {
         process.exit(result.status ?? 1)
@@ -30,8 +35,7 @@ for (const plugin of plugins) {
 
     console.log(`Building ${plugin}...`)
     result = spawnSync(npm, ['run', 'build'], {
-        cwd,
-        stdio: 'inherit',
+        ...spawnOptions(cwd),
     })
     if (result.status !== 0) {
         process.exit(result.status ?? 1)

@@ -143,6 +143,22 @@ ul.nav-tabs(ngbNav, #nav='ngbNav', [(activeId)]='activeProfilesSubTab')
                                     )
                                     span {{group.name}}
 
+                        .btn-group.connection-layout-selector
+                            button.btn.btn-outline-secondary(
+                                type='button',
+                                [class.active]='connectionsLayout === "horizontal"',
+                                [title]='"Horizontal layout"|translate',
+                                (click)='setConnectionsLayout("horizontal")'
+                            )
+                                i.fas.fa-fw.fa-arrows-alt-h
+                            button.btn.btn-outline-secondary(
+                                type='button',
+                                [class.active]='connectionsLayout === "vertical"',
+                                [title]='"Vertical layout"|translate',
+                                (click)='setConnectionsLayout("vertical")'
+                            )
+                                i.fas.fa-fw.fa-arrows-alt-v
+
                         button.btn.btn-outline-secondary.flex-shrink-0((click)='newConnectionProfileGroup()')
                             i.fas.fa-fw.fa-folder-plus
                             span(translate) New group

@@ -63,6 +63,11 @@ export class TerminalSessionLog {
     }
 
     stop (): void {
+        // Normal scans intentionally exclude the current cursor line because
+        // it may still be receiving data. Telnet servers commonly finish a
+        // prompt or an error without a trailing newline, so flush that final
+        // line before stopping or the whole log can remain empty.
+        this.scan(true)
         this.writeParsedDisposable?.dispose()
         this.writeParsedDisposable = null
         this.recording = false
@@ -78,7 +83,7 @@ export class TerminalSessionLog {
         this.filePath = newFilePath
     }
 
-    scan (): void {
+    scan (includeCurrentLine = false): void {
         if (!this.recording || !this.filePath) {
             return
         }
@@ -99,7 +104,8 @@ export class TerminalSessionLog {
             return
         }
 
-        for (let y = this.lastLoggedAbsoluteY + 1; y < cursorAbsY; y++) {
+        const lastY = includeCurrentLine ? cursorAbsY : cursorAbsY - 1
+        for (let y = this.lastLoggedAbsoluteY + 1; y <= lastY; y++) {
             const line = buffer.getLine(y)
             const text = line ? line.translateToString(true) : ''
             if (!isLoggableLine(text)) {
@@ -108,7 +114,7 @@ export class TerminalSessionLog {
             this.appendLog(cleanLineForLog(text))
         }
 
-        this.lastLoggedAbsoluteY = cursorAbsY - 1
+        this.lastLoggedAbsoluteY = lastY
     }
 
     private resetBaseline (): void {

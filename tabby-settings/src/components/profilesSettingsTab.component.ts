@@ -146,6 +146,15 @@ export class ProfilesSettingsTabComponent extends BaseComponent {
         this.changeDetector.markForCheck()
     }
 
+    get connectionsLayout (): 'horizontal'|'vertical' {
+        return this.config.store.appearance?.connectionsLayout === 'vertical' ? 'vertical' : 'horizontal'
+    }
+
+    setConnectionsLayout (layout: 'horizontal'|'vertical'): void {
+        this.config.store.appearance.connectionsLayout = layout
+        this.config.save()
+    }
+
     async refreshProfiles (): Promise<void> {
         const allProfiles = await this.profilesService.getProfiles()
         this.builtinProfiles = allProfiles.filter(x => x.isBuiltin && !x.isTemplate)

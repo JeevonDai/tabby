@@ -17,6 +17,11 @@
     outline: none;
 }
 
+.connections-tab-body.connections-layout-vertical {
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
 :host ::ng-deep profiles-settings-tab {
     display: flex;
     flex: 1 0 auto;
@@ -71,6 +76,35 @@
                     break-inside: avoid;
                 }
             }
+        }
+    }
+}
+
+:host ::ng-deep .connections-tab-body.connections-layout-vertical profiles-settings-tab {
+    flex: 0 0 auto;
+    width: 100%;
+    height: auto;
+
+    > .tab-content,
+    > .tab-content > .tab-pane,
+    > .tab-content > .tab-pane.active,
+    > .tab-content > .tab-pane.active > .connections-tab-pane {
+        height: auto;
+        min-height: 0;
+    }
+
+    > .tab-content > .tab-pane.active .connections-grouped-view {
+        display: grid;
+        flex: 0 0 auto;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 32rem), 1fr));
+        gap: 1rem 24px;
+        align-items: start;
+        width: 100%;
+        min-width: 0;
+
+        .connection-group-section {
+            width: auto;
+            max-width: none;
         }
     }
 }
