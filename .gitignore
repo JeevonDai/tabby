@@ -38,3 +38,6 @@ sentry-symbols.js
 crowdin.yml
 .crowdin.env
 *.agents
+
+dist*/**
+.tmp/**
