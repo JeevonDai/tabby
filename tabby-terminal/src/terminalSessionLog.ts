@@ -1,6 +1,6 @@
 import * as fs from 'fs'
 import * as path from 'path'
-import type { IDisposable, Terminal } from '@xterm/xterm'
+import type { IDisposable, IMarker, Terminal } from '@xterm/xterm'
 
 const ANSI_PATTERN = /\x1b\[[0-9;?]*[ -/]*[@-~]|\x1b\][^\x07]*(?:\x07|\x1b\\)|\x1b[()][0-9A-Za-z]|\x1b[@-Z\\-_]|\x1b./g
 const INVISIBLE_PATTERN = /[\s\x00-\x1f\x7f\u00a0\u1680\u2000-\u200f\u2028\u2029\u202f\u205f\u3000\ufeff]/g
@@ -38,8 +38,9 @@ export class TerminalSessionLog {
     private filePath: string | null = null
     private timestampFormat = '[{YYYY}-{MM}-{DD} {HH}:{mm}:{ss}.{SSS}]'
     private recording = false
-    private lastLoggedAbsoluteY = -1
+    private nextLineMarker: IMarker | null = null
     private writeParsedDisposable: IDisposable | null = null
+    private lineFeedDisposable: IDisposable | null = null
 
     get active (): boolean {
         return this.recording
@@ -55,10 +56,12 @@ export class TerminalSessionLog {
         this.stop()
         this.filePath = filePath
         this.timestampFormat = timestampFormat
-        this.recording = true
         fs.mkdirSync(path.dirname(filePath), { recursive: true })
         fs.writeFileSync(filePath, '', { encoding: 'utf8', flag: 'w' })
+        this.recording = true
         this.resetBaseline()
+        // Scan during parsing as well: a single write can exceed scrollback.
+        this.lineFeedDisposable = this.xterm.onLineFeed(() => this.scan())
         this.writeParsedDisposable = this.xterm.onWriteParsed(() => this.scan())
     }
 
@@ -70,9 +73,12 @@ export class TerminalSessionLog {
         this.scan(true)
         this.writeParsedDisposable?.dispose()
         this.writeParsedDisposable = null
+        this.lineFeedDisposable?.dispose()
+        this.lineFeedDisposable = null
         this.recording = false
         this.filePath = null
-        this.lastLoggedAbsoluteY = -1
+        this.nextLineMarker?.dispose()
+        this.nextLineMarker = null
     }
 
     rename (newFilePath: string): void {
@@ -95,17 +101,12 @@ export class TerminalSessionLog {
 
         const cursorAbsY = buffer.baseY + buffer.cursorY
 
-        if (this.lastLoggedAbsoluteY < buffer.baseY - 1) {
-            this.lastLoggedAbsoluteY = cursorAbsY - 1
-        }
-
-        if (cursorAbsY <= this.lastLoggedAbsoluteY) {
-            this.lastLoggedAbsoluteY = cursorAbsY - 1
-            return
-        }
-
+        // Buffer indexes are reused when scrollback is trimmed. A marker moves
+        // with its line, unlike an absolute index which eventually stops advancing.
+        const firstY = this.nextLineMarker && !this.nextLineMarker.isDisposed
+            ? this.nextLineMarker.line : 0
         const lastY = includeCurrentLine ? cursorAbsY : cursorAbsY - 1
-        for (let y = this.lastLoggedAbsoluteY + 1; y <= lastY; y++) {
+        for (let y = firstY; y <= lastY; y++) {
             const line = buffer.getLine(y)
             const text = line ? line.translateToString(true) : ''
             if (!isLoggableLine(text)) {
@@ -114,12 +115,12 @@ export class TerminalSessionLog {
             this.appendLog(cleanLineForLog(text))
         }
 
-        this.lastLoggedAbsoluteY = lastY
+        this.resetBaseline()
     }
 
     private resetBaseline (): void {
-        const buffer = this.xterm.buffer.active
-        this.lastLoggedAbsoluteY = buffer.baseY + buffer.cursorY - 1
+        this.nextLineMarker?.dispose()
+        this.nextLineMarker = this.xterm.registerMarker(0)
     }
 
     private appendLog (text: string): void {
